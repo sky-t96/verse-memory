@@ -1,0 +1,19 @@
+{
+  "name": "verse-memory-mcp-server",
+  "version": "1.0.0",
+  "description": "UEFN Verse制約・パターンの検証済みナレッジベース MCP Server",
+  "type": "module",
+  "main": "build/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node build/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "typescript": "latest"
+  }
+}

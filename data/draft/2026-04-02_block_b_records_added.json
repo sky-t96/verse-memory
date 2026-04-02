@@ -1,0 +1,14 @@
+{
+  "_comment": "Block B / v2 実装照合で追加した verse-060〜063 のバックアップ。正式データは data/verified/all_records.json にマージ済み。",
+  "merged_into_verified": "2026-04-02",
+  "updated_existing_ids": [
+    "verse-049",
+    "verse-050"
+  ],
+  "added_ids": [
+    "verse-060",
+    "verse-061",
+    "verse-062",
+    "verse-063"
+  ]
+}

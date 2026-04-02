@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Verse Memory Record",
+  "type": "object",
+  "required": [
+    "id", "title", "category", "tags", "trigger",
+    "problem", "solution", "verification", "severity", "related_ids"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^verse-\\d{3}$",
+      "description": "一意のID（verse-001形式）"
+    },
+    "title": {
+      "type": "string",
+      "description": "制約・パターンの端的な名称"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "language_constraint",
+        "device_behavior",
+        "api_gotcha",
+        "pattern_recommended",
+        "pattern_antipattern",
+        "workflow_tip"
+      ]
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "trigger": {
+      "type": "object",
+      "required": ["description", "keywords", "code_patterns"],
+      "properties": {
+        "description": { "type": "string" },
+        "keywords": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "code_patterns": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "problem": {
+      "type": "object",
+      "required": ["summary", "common_ai_mistake"],
+      "properties": {
+        "summary": { "type": "string" },
+        "common_ai_mistake": { "type": "string" }
+      }
+    },
+    "solution": {
+      "type": "object",
+      "required": ["summary"],
+      "properties": {
+        "summary": { "type": "string" },
+        "code_example": {
+          "type": ["string", "null"]
+        },
+        "reference_url": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "required": ["status", "verified_by", "verified_date"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["verified", "unverified", "community_reported"]
+        },
+        "verified_by": { "type": "string" },
+        "verified_date": { "type": "string" },
+        "uefn_version": { "type": "string" }
+      }
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["critical", "warning", "info"]
+    },
+    "related_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "manifest_section": {
+      "type": "string",
+      "description": "マニフェスト内のセクション番号（例: 3.1, A, E）。オプショナル。"
+    }
+  }
+}
