@@ -1,0 +1,5014 @@
+[
+  {
+    "id": "verse-001",
+    "title": "decides APIは角括弧呼び出し必須",
+    "category": "language_constraint",
+    "tags": [
+      "decides",
+      "GetValue",
+      "SetValue",
+      "syntax"
+    ],
+    "trigger": {
+      "description": "stat系APIを呼ぶとき",
+      "keywords": [
+        "decides",
+        "GetValue",
+        "SetValue"
+      ],
+      "code_patterns": [
+        "X.GetValue(...)",
+        "X.SetValue(...)",
+        "X.GetValue[...]"
+      ]
+    },
+    "problem": {
+      "summary": "丸括弧呼び出しで文法/評価が崩れる。",
+      "common_ai_mistake": "Api(...) で記述する。"
+    },
+    "solution": {
+      "summary": "decidesは [] で呼ぶ。",
+      "code_example": "if (Cur := Stat.GetValue[Agent]):\n    if (Stat.SetValue[Agent, Cur + 1]):\n        0",
+      "reference_url": "https://verselang.github.io/book/13_effects/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03頃",
+      "uefn_version": "不明"
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-017",
+      "verse-042",
+      "verse-068",
+      "verse-070",
+      "verse-071",
+      "verse-075"
+    ],
+    "manifest_section": "3.1"
+  },
+  {
+    "id": "verse-002",
+    "title": "creative_device varはラウンド再初期化前提",
+    "category": "device_behavior",
+    "tags": [
+      "round",
+      "state",
+      "creative_device"
+    ],
+    "trigger": {
+      "description": "ラウンド跨ぎ状態を扱うとき",
+      "keywords": [
+        "OnBegin",
+        "再初期化"
+      ],
+      "code_patterns": [
+        "var X",
+        "OnBegin<override>()"
+      ]
+    },
+    "problem": {
+      "summary": "クラスvar依存で状態が消える。",
+      "common_ai_mistake": "ラウンド跨ぎで同じインスタンス状態が残る前提で書く。"
+    },
+    "solution": {
+      "summary": "毎ラウンド再初期化/再購読し、永続はweak_mapへ分離する。",
+      "code_example": "OnBegin<override>()<suspends> : void =\n    RegisterListeners()",
+      "reference_url": "https://verselang.github.io/book/05_mutability/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03頃",
+      "uefn_version": "不明"
+    },
+    "severity": "warning",
+    "related_ids": [
+      "verse-003",
+      "verse-026"
+    ],
+    "manifest_section": "4.1"
+  },
+  {
+    "id": "verse-003",
+    "title": "永続はweak_map(player,persistable)に集約",
+    "category": "pattern_recommended",
+    "tags": [
+      "weak_map",
+      "persistable",
+      "persistence"
+    ],
+    "trigger": {
+      "description": "得点/進行度をラウンド跨ぎ保持したいとき",
+      "keywords": [
+        "weak_map",
+        "persistable"
+      ],
+      "code_patterns": [
+        "class<final><persistable>",
+        "weak_map(player, ...)"
+      ]
+    },
+    "problem": {
+      "summary": "通常var/mapでは保持できない。",
+      "common_ai_mistake": "通常mapを永続用途に使う。"
+    },
+    "solution": {
+      "summary": "persistableレコードに集約してweak_mapで保持する。",
+      "code_example": "data := class<final><persistable>:\n    Total : int = 0\n    CompletedRound : int = 0",
+      "reference_url": "https://verselang.github.io/book/17_persistable/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03頃",
+      "uefn_version": "不明"
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-004",
+      "verse-007",
+      "verse-002",
+      "verse-013",
+      "verse-069"
+    ],
+    "manifest_section": "4.1"
+  },
+  {
+    "id": "verse-004",
+    "title": "player弱マップ上限を見越して設計集約",
+    "category": "api_gotcha",
+    "tags": [
+      "weak_map",
+      "limit",
+      "design"
+    ],
+    "trigger": {
+      "description": "playerキー永続マップを増やすとき",
+      "keywords": [
+        "weak_map上限"
+      ],
+      "code_patterns": [
+        "weak_map(player,"
+      ]
+    },
+    "problem": {
+      "summary": "乱立で制約に当たりやすい。",
+      "common_ai_mistake": "用途ごとにweak_mapを追加。"
+    },
+    "solution": {
+      "summary": "1レコードに必要項目を集約する。 Epic 公式（Map in Verse / Verse Persistence Best Practices）では、モジュールスコープの weak_map と persistable に関する型・運用の指針が示される一方、「プロジェクト内で weak_map(player, …) を何個まで宣言できるか」という数値上限は、少なくとも当該ページ群では確認できなかった。本レコードの「乱立を避けて1レコードに集約する」は、永続データの整合性と保守性のための推奨パターンである。数値の「最大2つ」は実装コメント由来のため、公式ドキュメントで再確認できる根拠が得られたら verification を更新する。",
+      "code_example": "TycoonPersistedData{ Gold, CurseMaxHP, TotalWins, ... }",
+      "reference_url": "https://dev.epicgames.com/documentation/en-us/uefn/map-in-verse"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03〜04頃（公式ドキュメント + Verse.digest 照合）。「weak_map 最大2個」はプロジェクト内コメント由来で公式未確認。",
+      "uefn_version": "不明"
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-003"
+    ],
+    "manifest_section": "4.1"
+  },
+  {
+    "id": "verse-005",
+    "title": "Eliminationイベント順序は非保証前提",
+    "category": "api_gotcha",
+    "tags": [
+      "elimination_manager",
+      "event_order",
+      "race"
+    ],
+    "trigger": {
+      "description": "キル点と終端処理を同時実装するとき",
+      "keywords": [
+        "EliminatedEvent",
+        "EliminationEvent"
+      ],
+      "code_patterns": [
+        "Subscribe(OnPlayerEliminated)",
+        "Subscribe(OnPlayerElimination)"
+      ]
+    },
+    "problem": {
+      "summary": "順序依存だと加点/終端の取りこぼしが出る。",
+      "common_ai_mistake": "発火順を固定とみなす。"
+    },
+    "solution": {
+      "summary": "終端処理をsuspends化し短待機でレース耐性を持たせる。",
+      "code_example": "Sleep(0.2)\n# then end-round",
+      "reference_url": null
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03頃",
+      "uefn_version": "不明"
+    },
+    "severity": "warning",
+    "related_ids": [
+      "verse-009",
+      "verse-032",
+      "verse-041"
+    ],
+    "manifest_section": "5.2"
+  },
+  {
+    "id": "verse-006",
+    "title": "OnBegin直後stat操作は待機後に行う",
+    "category": "api_gotcha",
+    "tags": [
+      "OnBegin",
+      "stat_creator",
+      "Sleep"
+    ],
+    "trigger": {
+      "description": "開始直後にstat復元/初期化するとき",
+      "keywords": [
+        "OnBegin",
+        "SetValue"
+      ],
+      "code_patterns": [
+        "OnBegin<override>()<suspends>",
+        "Sleep(0.5)"
+      ]
+    },
+    "problem": {
+      "summary": "初期化競合で反映漏れが起きる。",
+      "common_ai_mistake": "待機なしでSetValueする。"
+    },
+    "solution": {
+      "summary": "短待機後に復元/初期化する。",
+      "code_example": "Sleep(0.5)\nPlayerPoints.SetValue[...]",
+      "reference_url": null
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03頃",
+      "uefn_version": "不明"
+    },
+    "severity": "warning",
+    "related_ids": [
+      "verse-007",
+      "verse-015"
+    ],
+    "manifest_section": "E"
+  },
+  {
+    "id": "verse-007",
+    "title": "新マッチ判定はCompletedRound×TotalRounds",
+    "category": "pattern_recommended",
+    "tags": [
+      "IsNewMatch",
+      "CompletedRound",
+      "TotalRounds"
+    ],
+    "trigger": {
+      "description": "新規だけ初期化し継続ラウンドを復元したいとき",
+      "keywords": [
+        "IsNewMatch",
+        "CompletedRound"
+      ],
+      "code_patterns": [
+        "if (IsNewMatch = true)",
+        "ST.CompletedRound < TotalRounds"
+      ]
+    },
+    "problem": {
+      "summary": "判定不備で毎ラウンド0化する。",
+      "common_ai_mistake": "OnBegin毎に常時リセット。"
+    },
+    "solution": {
+      "summary": "進行度に応じてnew/continue分岐する。",
+      "code_example": "if (IsNewMatch = true):\n    # zero\nelse:\n    # restore",
+      "reference_url": null
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03頃",
+      "uefn_version": "不明"
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-008",
+      "verse-011",
+      "verse-003",
+      "verse-006"
+    ],
+    "manifest_section": "6"
+  },
+  {
+    "id": "verse-008",
+    "title": "PersistTotalでCompletedRoundを増やさない",
+    "category": "pattern_antipattern",
+    "tags": [
+      "PersistTotal",
+      "CompletedRound",
+      "double_count"
+    ],
+    "trigger": {
+      "description": "得点保存と進行更新を同関数で書きたくなるとき",
+      "keywords": [
+        "PersistTotal",
+        "二重加算"
+      ],
+      "code_patterns": [
+        "PersistTotal(...)",
+        "CompletedRound := ... + 1"
+      ]
+    },
+    "problem": {
+      "summary": "進行度が壊れて判定破綻する。",
+      "common_ai_mistake": "保存関数内で進行度を更新。"
+    },
+    "solution": {
+      "summary": "進行更新はラウンド終端一括にする。",
+      "code_example": "PersistTotal: CompletedRound := SavedCompletedRound",
+      "reference_url": null
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03頃",
+      "uefn_version": "不明"
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-007",
+      "verse-010"
+    ],
+    "manifest_section": "4.2"
+  },
+  {
+    "id": "verse-009",
+    "title": "全員脱落分岐を明示してラウンド終端",
+    "category": "pattern_recommended",
+    "tags": [
+      "all_eliminated",
+      "no_survivor",
+      "edge_case"
+    ],
+    "trigger": {
+      "description": "1人テストや同時脱落を考慮した終端判定時",
+      "keywords": [
+        "EliminationCount",
+        "TotalPlayersThisRound"
+      ],
+      "code_patterns": [
+        "else if: EliminationCount >= TotalPlayersThisRound"
+      ]
+    },
+    "problem": {
+      "summary": "生存者前提のみだと終端しない。",
+      "common_ai_mistake": "TotalPlayers-1条件のみ実装。"
+    },
+    "solution": {
+      "summary": "全員脱落分岐でVRなし終端を追加する。",
+      "code_example": "spawn { NoSurvivorRoundEnd(Eliminated) }",
+      "reference_url": null
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03末",
+      "uefn_version": "不明"
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-010",
+      "verse-011",
+      "verse-005"
+    ],
+    "manifest_section": "6"
+  },
+  {
+    "id": "verse-010",
+    "title": "終端更新は加点成功依存にしない",
+    "category": "pattern_recommended",
+    "tags": [
+      "end_round",
+      "fault_tolerance",
+      "SetValue"
+    ],
+    "trigger": {
+      "description": "加点と終了を同ブロックで書くとき",
+      "keywords": [
+        "SetValue失敗",
+        "EndGame"
+      ],
+      "code_patterns": [
+        "if (SetValue[...]):",
+        "EndGame.Activate(...)"
+      ]
+    },
+    "problem": {
+      "summary": "加点失敗でラウンド完了が止まる。",
+      "common_ai_mistake": "EndGameをif成功内に置く。"
+    },
+    "solution": {
+      "summary": "EndGame/CompletedRound更新はif外で必ず実行する。",
+      "code_example": "if (SetValue[...]):\n    # score\n# round complete + EndGame",
+      "reference_url": null
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03頃",
+      "uefn_version": "不明"
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-009",
+      "verse-008"
+    ],
+    "manifest_section": "6"
+  },
+  {
+    "id": "verse-011",
+    "title": "ラウンド終端で全員のCompletedRoundを更新",
+    "category": "pattern_recommended",
+    "tags": [
+      "consistency",
+      "CompletedRound",
+      "all_players"
+    ],
+    "trigger": {
+      "description": "次ラウンド判定整合を保つとき",
+      "keywords": [
+        "PlayersRound",
+        "for update"
+      ],
+      "code_patterns": [
+        "for (PRound : PlayersRound):"
+      ]
+    },
+    "problem": {
+      "summary": "更新対象漏れでプレイヤー間判定がズレる。",
+      "common_ai_mistake": "関係者だけ更新。"
+    },
+    "solution": {
+      "summary": "終端時に参加者全員へ一括更新する。",
+      "code_example": "PlayersRound := GetPlayspace().GetPlayers()\nfor (PRound : PlayersRound): ...",
+      "reference_url": null
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03頃",
+      "uefn_version": "不明"
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-007",
+      "verse-009"
+    ],
+    "manifest_section": "6"
+  },
+  {
+    "id": "verse-012",
+    "title": "スコアボード列割り当てはUI設定側",
+    "category": "device_behavior",
+    "tags": [
+      "scoreboard",
+      "ui",
+      "binding"
+    ],
+    "trigger": {
+      "description": "スコアボード列をコードで制御したいとき",
+      "keywords": [
+        "scoreboard列",
+        "UI設定"
+      ],
+      "code_patterns": [
+        "scoreboard",
+        "stat column"
+      ]
+    },
+    "problem": {
+      "summary": "Verseだけで列バインドはできないケースがある。",
+      "common_ai_mistake": "コードだけで完結できると思う。"
+    },
+    "solution": {
+      "summary": "島設定UIでstat列を割り当てる。",
+      "code_example": "（島設定 -> UI -> スコアボード列）",
+      "reference_url": null
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03頃",
+      "uefn_version": "不明"
+    },
+    "severity": "info",
+    "related_ids": [
+      "verse-036"
+    ],
+    "manifest_section": "7"
+  },
+  {
+    "id": "verse-013",
+    "title": "stat_creator永続とVerse永続の二重管理禁止",
+    "category": "pattern_antipattern",
+    "tags": [
+      "persistence",
+      "stat_creator",
+      "weak_map"
+    ],
+    "trigger": {
+      "description": "デバイス永続ONのままweak_map保存するとき",
+      "keywords": [
+        "Use Persistence",
+        "Auto Save",
+        "Auto Load"
+      ],
+      "code_patterns": [
+        "stat_creator_device",
+        "weak_map(player,"
+      ]
+    },
+    "problem": {
+      "summary": "競合して値ズレしやすい。",
+      "common_ai_mistake": "両方を正として扱う。"
+    },
+    "solution": {
+      "summary": "保存ソースを1つに統一する。",
+      "code_example": "Use Persistence=OFF / Auto Save=OFF / Auto Load=OFF",
+      "reference_url": "https://verselang.github.io/book/17_persistable/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03頃",
+      "uefn_version": "不明"
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-003",
+      "verse-036"
+    ],
+    "manifest_section": "4.2"
+  },
+  {
+    "id": "verse-014",
+    "title": "suspends関数はspawnで起動",
+    "category": "language_constraint",
+    "tags": [
+      "suspends",
+      "spawn",
+      "async"
+    ],
+    "trigger": {
+      "description": "イベントハンドラからSleep入り処理を呼ぶとき",
+      "keywords": [
+        "<suspends>",
+        "spawn"
+      ],
+      "code_patterns": [
+        "spawn { Func(...) }"
+      ]
+    },
+    "problem": {
+      "summary": "同期文脈で直接呼ぶとエラー化しやすい。",
+      "common_ai_mistake": "voidハンドラから直呼び。"
+    },
+    "solution": {
+      "summary": "suspendsに切り出してspawnで呼ぶ。",
+      "code_example": "spawn { SurvivorRoundEndAfterKillOrdering(A) }",
+      "reference_url": "https://verselang.github.io/book/14_concurrency/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03頃",
+      "uefn_version": "不明"
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-022",
+      "verse-034",
+      "verse-072",
+      "verse-076",
+      "verse-077",
+      "verse-080"
+    ],
+    "manifest_section": "C"
+  },
+  {
+    "id": "verse-015",
+    "title": "IsActive待機後にFortCharacter参照",
+    "category": "pattern_recommended",
+    "tags": [
+      "IsActive",
+      "GetFortCharacter",
+      "timing"
+    ],
+    "trigger": {
+      "description": "開始直後にキャラ/座標を触るとき",
+      "keywords": [
+        "IsActive",
+        "GetFortCharacter"
+      ],
+      "code_patterns": [
+        "if(Player.IsActive[])",
+        "Agent.GetFortCharacter[]"
+      ]
+    },
+    "problem": {
+      "summary": "スポーン未完了で取得失敗する。",
+      "common_ai_mistake": "OnBegin直後に即参照する。"
+    },
+    "solution": {
+      "summary": "短周期ループでアクティブ待機する。",
+      "code_example": "loop:\n    if(Player.IsActive[]): break\n    Sleep(0.1)",
+      "reference_url": null
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03頃",
+      "uefn_version": "不明"
+    },
+    "severity": "warning",
+    "related_ids": [
+      "verse-006",
+      "verse-042"
+    ],
+    "manifest_section": "E"
+  },
+  {
+    "id": "verse-016",
+    "title": "loop本体でno_rollback APIを直接呼ばない",
+    "category": "language_constraint",
+    "tags": [
+      "no_rollback",
+      "loop",
+      "3512",
+      "trigger"
+    ],
+    "trigger": {
+      "description": "定期ループ内でShow/Hide/UI更新をしたいとき",
+      "keywords": [
+        "3512",
+        "ShowProps",
+        "SetText"
+      ],
+      "code_patterns": [
+        "loop:",
+        "ShowProps()",
+        "SetText(...)"
+      ]
+    },
+    "problem": {
+      "summary": "文脈違反や表示遅延・不発につながる。",
+      "common_ai_mistake": "loopで直接no_rollback関数を呼ぶ。"
+    },
+    "solution": {
+      "summary": "loopはSleep+Triggerのみ、実処理はイベントハンドラ側で行う。",
+      "code_example": "loop:\n    Sleep(0.25)\n    Trig.Trigger(A)\n\nHandle(...):\n    Device.DoShowCurrentTarget()",
+      "reference_url": null
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03頃",
+      "uefn_version": "不明"
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-023",
+      "verse-024",
+      "verse-033",
+      "verse-030"
+    ],
+    "manifest_section": "5.1"
+  },
+  {
+    "id": "verse-017",
+    "title": "失敗コンテキスト境界を厳守",
+    "category": "language_constraint",
+    "tags": [
+      "failure_context",
+      "if",
+      "decides",
+      "3512",
+      "3509"
+    ],
+    "trigger": {
+      "description": "if条件で複数式を扱うとき",
+      "keywords": [
+        "Failure Context",
+        "if条件"
+      ],
+      "code_patterns": [
+        "if (A := ..., B := ...):"
+      ]
+    },
+    "problem": {
+      "summary": "条件節に不適切な式混在でエラーになる。",
+      "common_ai_mistake": "if条件でno_rollbackを呼ぶ。"
+    },
+    "solution": {
+      "summary": "条件には失敗可能式のみ、no_rollbackは条件外/ハンドラ本体へ。",
+      "code_example": "Now := GetSimulationElapsedTime()\nMult := M.GetGoldMultiplierAtTime(A, Now)\nif (Mult <= 1.0): ...",
+      "reference_url": "https://verselang.github.io/book/08_failure/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03頃",
+      "uefn_version": "不明"
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-001",
+      "verse-018",
+      "verse-033",
+      "verse-024",
+      "verse-040",
+      "verse-056",
+      "verse-057",
+      "verse-065",
+      "verse-068",
+      "verse-069",
+      "verse-071",
+      "verse-073"
+    ],
+    "manifest_section": "B"
+  },
+  {
+    "id": "verse-018",
+    "title": "GetSimulationElapsedTimeは条件外で取得",
+    "category": "api_gotcha",
+    "tags": [
+      "time",
+      "GetSimulationElapsedTime",
+      "multiplier"
+    ],
+    "trigger": {
+      "description": "倍率/期限判定時",
+      "keywords": [
+        "simulation time",
+        "buff"
+      ],
+      "code_patterns": [
+        "GetSimulationElapsedTime()",
+        "GetGoldMultiplierAtTime(...)"
+      ]
+    },
+    "problem": {
+      "summary": "GetSimulationElapsedTime自体は成功するが、その戻り値を使った演算をif条件内で行うとfailure context違反になる。本質的にはverse-017の具体例だが、API名での検索性を考慮し独立レコードとする。",
+      "common_ai_mistake": "if条件に時刻取得を埋め込む。"
+    },
+    "solution": {
+      "summary": "時刻を先に変数化して渡す。",
+      "code_example": "Now := GetSimulationElapsedTime()\nMult := Manager.GetGoldMultiplierAtTime(Agent, Now)",
+      "reference_url": "https://verselang.github.io/book/08_failure/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03頃",
+      "uefn_version": "不明"
+    },
+    "severity": "warning",
+    "related_ids": [
+      "verse-021",
+      "verse-017"
+    ],
+    "manifest_section": "B"
+  },
+  {
+    "id": "verse-019",
+    "title": "timer_deviceは参加者0人開始に対応",
+    "category": "api_gotcha",
+    "tags": [
+      "timer_device",
+      "participant",
+      "SuccessEvent"
+    ],
+    "trigger": {
+      "description": "ゲーム開始時にタイマー駆動する処理",
+      "keywords": [
+        "ParticipantAddedEvent",
+        "Enable",
+        "Start"
+      ],
+      "code_patterns": [
+        "T.Enable(A)",
+        "T.Start(A)",
+        "ParticipantAddedEvent().Subscribe(...)"
+      ]
+    },
+    "problem": {
+      "summary": "参加者不在開始でタイマーが回らない。",
+      "common_ai_mistake": "Startを1回呼んで終わる。"
+    },
+    "solution": {
+      "summary": "参加者あり時は全員起動、0人時は初参加で起動。",
+      "code_example": "if (not Started?):\n    Ps.ParticipantAddedEvent().Subscribe(FirstStarter{...}.Handle)",
+      "reference_url": null
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03頃",
+      "uefn_version": "不明"
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-020",
+      "verse-053"
+    ],
+    "manifest_section": "5.3"
+  },
+  {
+    "id": "verse-020",
+    "title": "タイマー不発環境に初回表示フォールバック",
+    "category": "pattern_recommended",
+    "tags": [
+      "fallback",
+      "timer",
+      "initial_display"
+    ],
+    "trigger": {
+      "description": "SuccessEventが来ない環境を考慮するとき",
+      "keywords": [
+        "フォールバック",
+        "ShowOneRandom"
+      ],
+      "code_patterns": [
+        "HideAllItems()",
+        "Sleep(1.0)",
+        "ShowOneRandom()"
+      ]
+    },
+    "problem": {
+      "summary": "イベント不発だと永遠に表示されない。",
+      "common_ai_mistake": "SuccessEvent依存のみで実装。"
+    },
+    "solution": {
+      "summary": "OnBeginで1回表示するフォールバックを入れる。",
+      "code_example": "HideAllItems()\nSleep(1.0)\nShowOneRandom()",
+      "reference_url": null
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03頃",
+      "uefn_version": "不明"
+    },
+    "severity": "warning",
+    "related_ids": [
+      "verse-019"
+    ],
+    "manifest_section": "5.3"
+  },
+  {
+    "id": "verse-021",
+    "title": "Floor変換は失敗分岐を用意",
+    "category": "api_gotcha",
+    "tags": [
+      "Floor",
+      "float_to_int",
+      "reward"
+    ],
+    "trigger": {
+      "description": "倍率適用後にint化するとき",
+      "keywords": [
+        "Floor",
+        "EffectiveGold"
+      ],
+      "code_patterns": [
+        "if (R := Floor[...]):"
+      ]
+    },
+    "problem": {
+      "summary": "変換失敗時処理がないと値が不安定。",
+      "common_ai_mistake": "Floor成功前提で代入。"
+    },
+    "solution": {
+      "summary": "elseで元値フォールバックを入れる。",
+      "code_example": "Effective := if (R := Floor[Base * 1.0 * Mult]): R else: Base",
+      "reference_url": null
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03頃",
+      "uefn_version": "不明"
+    },
+    "severity": "warning",
+    "related_ids": [
+      "verse-018"
+    ],
+    "manifest_section": "A"
+  },
+  {
+    "id": "verse-022",
+    "title": "spawnは単一コルーチン呼び出しに限定",
+    "category": "language_constraint",
+    "tags": [
+      "spawn",
+      "3538",
+      "coroutine"
+    ],
+    "trigger": {
+      "description": "spawn内に複数処理を書きたいとき",
+      "keywords": [
+        "3538",
+        "spawn構文"
+      ],
+      "code_patterns": [
+        "spawn { A(); B() }"
+      ]
+    },
+    "problem": {
+      "summary": "複合文spawnでコンパイルエラー化。",
+      "common_ai_mistake": "spawnブロックに複数文を直書き。"
+    },
+    "solution": {
+      "summary": "suspends関数に切り出し、spawnは1関数呼び出しにする。",
+      "code_example": "spawn { StartCountdownTimerOnce() }",
+      "reference_url": "https://verselang.github.io/book/14_concurrency/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03頃",
+      "uefn_version": "不明"
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-014",
+      "verse-034",
+      "verse-072",
+      "verse-077"
+    ],
+    "manifest_section": "C"
+  },
+  {
+    "id": "verse-023",
+    "title": "breakはloop専用（forでは不可）",
+    "category": "language_constraint",
+    "tags": [
+      "break",
+      "loop",
+      "for",
+      "3581"
+    ],
+    "trigger": {
+      "description": "反復を途中終了したいとき",
+      "keywords": [
+        "break",
+        "3581"
+      ],
+      "code_patterns": [
+        "for (...):",
+        "break"
+      ]
+    },
+    "problem": {
+      "summary": "for+breakで文法エラーになる。",
+      "common_ai_mistake": "他言語感覚でfor内breakを使う。"
+    },
+    "solution": {
+      "summary": "loopへ変換するかフラグ制御する。",
+      "code_example": "loop:\n    if (Done?): break\n    ...",
+      "reference_url": "https://verselang.github.io/book/07_control/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03頃",
+      "uefn_version": "不明"
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-016",
+      "verse-045"
+    ],
+    "manifest_section": "3.2"
+  },
+  {
+    "id": "verse-024",
+    "title": "Billboard SetTextはキュー化してイベント消化",
+    "category": "pattern_recommended",
+    "tags": [
+      "billboard",
+      "SetText",
+      "queue",
+      "event"
+    ],
+    "trigger": {
+      "description": "拠点ステータスを安全更新したいとき",
+      "keywords": [
+        "PendingBillboardUpdate",
+        "SuccessEvent"
+      ],
+      "code_patterns": [
+        "set PendingBillboardUpdate = option{...}",
+        "ApplyPendingBillboardUpdate(...)"
+      ]
+    },
+    "problem": {
+      "summary": "直接SetTextで文脈衝突しやすい。",
+      "common_ai_mistake": "loop/if条件内でSetTextを実行。"
+    },
+    "solution": {
+      "summary": "更新要求を積み、イベントハンドラで適用する。",
+      "code_example": "if (Req := PendingBillboardUpdate?):\n    ApplyPendingBillboardUpdate(Req)\n    set PendingBillboardUpdate = false",
+      "reference_url": null
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03頃",
+      "uefn_version": "不明"
+    },
+    "severity": "warning",
+    "related_ids": [
+      "verse-016",
+      "verse-017",
+      "verse-033"
+    ],
+    "manifest_section": "5.1"
+  },
+  {
+    "id": "verse-025",
+    "title": "勝敗処理は二重ロックで冪等化",
+    "category": "pattern_recommended",
+    "tags": [
+      "idempotent",
+      "match_lock",
+      "round_lock"
+    ],
+    "trigger": {
+      "description": "相打ちや重複イベントが起こり得るとき",
+      "keywords": [
+        "MatchEnded",
+        "RoundEliminationProcessed"
+      ],
+      "code_patterns": [
+        "if (MatchEnded = true): return"
+      ]
+    },
+    "problem": {
+      "summary": "報酬/勝敗が複数回反映される。",
+      "common_ai_mistake": "単発イベント前提でガードなし。"
+    },
+    "solution": {
+      "summary": "ラウンド/マッチの2段ロックを入れる。",
+      "code_example": "if (MatchEnded = true):\n    return\nset MatchEnded = true",
+      "reference_url": null
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03頃",
+      "uefn_version": "不明"
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-035"
+    ],
+    "manifest_section": "5.2"
+  },
+  {
+    "id": "verse-026",
+    "title": "Subscribeはライフサイクルあたり1回（ループ内再購読禁止）",
+    "category": "pattern_antipattern",
+    "tags": [
+      "Subscribe",
+      "multi_fire",
+      "leak",
+      "round",
+      "lifecycle"
+    ],
+    "trigger": {
+      "description": "ループや状態遷移で再購読したくなるとき",
+      "keywords": [
+        "多重購読",
+        "重複発火"
+      ],
+      "code_patterns": [
+        "loop内Subscribe",
+        "再Subscribe"
+      ]
+    },
+    "problem": {
+      "summary": "ループや状態遷移内でSubscribeを繰り返すとハンドラが増殖して不安定になる。OnBeginでのラウンドごとの再購読（verse-002）は正常な動作であり、ここで禁止しているのはライフサイクル内での重複購読。",
+      "common_ai_mistake": "都度Subscribeを追加。"
+    },
+    "solution": {
+      "summary": "OnBeginで1回購読し状態で制御する。",
+      "code_example": "Event.Subscribe(Handler)",
+      "reference_url": null
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03頃",
+      "uefn_version": "不明"
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-002",
+      "verse-041"
+    ],
+    "manifest_section": "5.2"
+  },
+  {
+    "id": "verse-027",
+    "title": "teleporter競合時はTeleportToで座標転送",
+    "category": "api_gotcha",
+    "tags": [
+      "teleporter",
+      "TeleportTo",
+      "transform"
+    ],
+    "trigger": {
+      "description": "テレポート不発/ズレが出るとき",
+      "keywords": [
+        "GetTransform",
+        "Fort.TeleportTo"
+      ],
+      "code_patterns": [
+        "Tx := Dest.GetTransform()",
+        "Fort.TeleportTo[...]"
+      ]
+    },
+    "problem": {
+      "summary": "デバイスTeleport単独だと競合で不安定。",
+      "common_ai_mistake": "Dest.Teleport(Agent)のみ使用。"
+    },
+    "solution": {
+      "summary": "Transform取得してFortCharacter.TeleportToで移送。",
+      "code_example": "Tx := Dest.GetTransform()\nFort.TeleportTo[Tx.Translation, Tx.Rotation]",
+      "reference_url": null
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03頃",
+      "uefn_version": "不明"
+    },
+    "severity": "warning",
+    "related_ids": [],
+    "manifest_section": "5.3"
+  },
+  {
+    "id": "verse-028",
+    "title": "購入成功時のみ呪い連携を発火",
+    "category": "pattern_recommended",
+    "tags": [
+      "shop",
+      "curse",
+      "purchase_success"
+    ],
+    "trigger": {
+      "description": "GOLD不足時の副作用発火を防ぎたいとき",
+      "keywords": [
+        "PurchaseSuccess",
+        "呪い"
+      ],
+      "code_patterns": [
+        "if (...SetValue[Agent, CurrentGold - Cost]):",
+        "FirePurchaseSuccessTrigger(...)"
+      ]
+    },
+    "problem": {
+      "summary": "購入失敗でも呪いが発動する。",
+      "common_ai_mistake": "ボタン押下で先に呪い処理。"
+    },
+    "solution": {
+      "summary": "消費成功後にのみ呪い/トリガーを呼ぶ。",
+      "code_example": "if (...):\n    GrantItemIndex(...)\n    FirePurchaseSuccessTrigger(...)",
+      "reference_url": null
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03頃",
+      "uefn_version": "不明"
+    },
+    "severity": "warning",
+    "related_ids": [],
+    "manifest_section": "7"
+  },
+  {
+    "id": "verse-029",
+    "title": "UI表示文字はlocalizes messageで生成",
+    "category": "language_constraint",
+    "tags": [
+      "message",
+      "localizes",
+      "HUD",
+      "SetText"
+    ],
+    "trigger": {
+      "description": "動的文字列をUIへ出すとき",
+      "keywords": [
+        "message型",
+        "localizes"
+      ],
+      "code_patterns": [
+        "MakeGoldMessage<localizes>(...) : message"
+      ]
+    },
+    "problem": {
+      "summary": "string直渡しで型不一致になる。",
+      "common_ai_mistake": "stringをShow/SetTextへ直接渡す。"
+    },
+    "solution": {
+      "summary": "message生成関数経由で表示する。",
+      "code_example": "MakeGoldMessage<localizes>(Gold : int) : message = \"{Gold}\"",
+      "reference_url": null
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03頃",
+      "uefn_version": "不明"
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-036"
+    ],
+    "manifest_section": "3.3"
+  },
+  {
+    "id": "verse-030",
+    "title": "演出はDirect Event Binding委譲が安定",
+    "category": "workflow_tip",
+    "tags": [
+      "Direct Event Binding",
+      "HUD",
+      "Audio",
+      "VFX"
+    ],
+    "trigger": {
+      "description": "演出不発を避けたいとき",
+      "keywords": [
+        "Trigger",
+        "バインディング"
+      ],
+      "code_patterns": [
+        "Trig.Trigger(Agent)",
+        "spawn { ...Deferred... }"
+      ]
+    },
+    "problem": {
+      "summary": "Verse直制御はタイミング/文脈で不発しやすい。",
+      "common_ai_mistake": "購入処理内でHUD/音を直呼び。"
+    },
+    "solution": {
+      "summary": "VerseはTrigger発火のみ、実演出はレベル側で処理。",
+      "code_example": "spawn { PlayCurseFeedbackDeferred(TargetAgent) }",
+      "reference_url": null
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03頃",
+      "uefn_version": "不明"
+    },
+    "severity": "info",
+    "related_ids": [
+      "verse-016"
+    ],
+    "manifest_section": "7"
+  },
+  {
+    "id": "verse-031",
+    "title": "移動速度呪いは再適用ループで維持",
+    "category": "device_behavior",
+    "tags": [
+      "movement_modulator",
+      "curse",
+      "reapply"
+    ],
+    "trigger": {
+      "description": "効果時間ありの低速化を継続したいとき",
+      "keywords": [
+        "Effect Duration",
+        "Activate再実行"
+      ],
+      "code_patterns": [
+        "loop: Sleep(...)",
+        "M.Activate(Agent)"
+      ]
+    },
+    "problem": {
+      "summary": "1回適用だけだと時間で解除される。",
+      "common_ai_mistake": "購入時1回だけActivate。"
+    },
+    "solution": {
+      "summary": "呪い有効中は定期Activateを続ける。",
+      "code_example": "if (... CurseMovementSlow = true ...):\n    M.Activate(Agent)\nelse:\n    break",
+      "reference_url": null
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03頃",
+      "uefn_version": "不明"
+    },
+    "severity": "warning",
+    "related_ids": [],
+    "manifest_section": "E"
+  },
+  {
+    "id": "verse-032",
+    "title": "撃破直後Respawnは短遅延を挟む",
+    "category": "device_behavior",
+    "tags": [
+      "respawn",
+      "elimination",
+      "timing"
+    ],
+    "trigger": {
+      "description": "EliminatedEvent直後に復活させるとき",
+      "keywords": [
+        "Respawn",
+        "Sleep(0.1)"
+      ],
+      "code_patterns": [
+        "DoInstantRespawnForLoser(... )<suspends>"
+      ]
+    },
+    "problem": {
+      "summary": "即時Respawnで状態競合しやすい。",
+      "common_ai_mistake": "待機なしでRespawn。"
+    },
+    "solution": {
+      "summary": "短いSleep後にRespawnする。",
+      "code_example": "Sleep(0.1)\nLoser.Respawn(Translation, Rotation)",
+      "reference_url": null
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03頃",
+      "uefn_version": "不明"
+    },
+    "severity": "warning",
+    "related_ids": [
+      "verse-005"
+    ],
+    "manifest_section": "5.3"
+  },
+  {
+    "id": "verse-033",
+    "title": "no_rollback API呼び出しは集約・最小化する",
+    "category": "pattern_antipattern",
+    "tags": [
+      "no_rollback",
+      "non_recommended",
+      "failure_context",
+      "queue_trigger",
+      "deprecated"
+    ],
+    "trigger": {
+      "description": "設計初期でno_rollback APIを各所で直接呼びたくなるとき",
+      "keywords": [
+        "no_rollback",
+        "3512",
+        "直呼び",
+        "設計指針"
+      ],
+      "code_patterns": [
+        "*.SetText(...)",
+        "*.ShowProps()",
+        "*.HideProps()",
+        "if (...) then no_rollback call"
+      ]
+    },
+    "problem": {
+      "summary": "文脈依存バグ・再現性の低い不発・保守性低下が起きやすい。",
+      "common_ai_mistake": "動いた場所をコピーしてno_rollback呼び出しを拡散する。"
+    },
+    "solution": {
+      "summary": "no_rollback呼び出し箇所をイベントハンドラ/専用関数へ集約し、loop/if条件から排除する。",
+      "code_example": "set PendingUpdate = option{Req}\n# SuccessEvent handler only\nApplyPendingUpdate(Req)",
+      "reference_url": "https://verselang.github.io/book/13_effects/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03〜04頃",
+      "uefn_version": "不明"
+    },
+    "severity": "warning",
+    "related_ids": [
+      "verse-016",
+      "verse-017",
+      "verse-024",
+      "verse-070"
+    ],
+    "manifest_section": "5.1"
+  },
+  {
+    "id": "verse-034",
+    "title": "<suspends> と <decides> の併用不可",
+    "category": "language_constraint",
+    "tags": [
+      "suspends",
+      "decides",
+      "specifiers",
+      "function_effects"
+    ],
+    "trigger": {
+      "description": "待機処理しつつ失敗文脈も同関数で扱いたいとき",
+      "keywords": [
+        "<suspends>",
+        "<decides>",
+        "effect specifier"
+      ],
+      "code_patterns": [
+        "Func()<suspends><decides>",
+        "Sleep(...) inside decides function"
+      ]
+    },
+    "problem": {
+      "summary": "エフェクト仕様衝突でコンパイル不能になる。",
+      "common_ai_mistake": "1つの関数で両方の役割を持たせる。"
+    },
+    "solution": {
+      "summary": "役割分離する（decides関数は判定/更新、suspends関数は待機とオーケストレーション）。",
+      "code_example": "ComputeX()<decides> : int = ...\nRunX()<suspends> : void =\n    Sleep(0.1)\n    if (V := ComputeX[]): ...",
+      "reference_url": "https://verselang.github.io/book/13_effects/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03〜04頃",
+      "uefn_version": "不明"
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-014",
+      "verse-022",
+      "verse-070",
+      "verse-073"
+    ],
+    "manifest_section": "3.1"
+  },
+  {
+    "id": "verse-035",
+    "title": "EndMatchForfeit / MatchAbortedで中断系を本線から分離",
+    "category": "pattern_recommended",
+    "tags": [
+      "EndMatchForfeit",
+      "MatchAborted",
+      "abort_flow",
+      "forfeit"
+    ],
+    "trigger": {
+      "description": "対戦中の退出・タイムアウトなど異常系終端を扱うとき",
+      "keywords": [
+        "forfeit",
+        "abort",
+        "退出",
+        "中断試合"
+      ],
+      "code_patterns": [
+        "EndMatchForfeit(...)",
+        "MatchAborted",
+        "AbortMatchWinner"
+      ]
+    },
+    "problem": {
+      "summary": "通常EndMatchに中断処理を混ぜると二重実行や分岐破綻が起きる。",
+      "common_ai_mistake": "通常勝敗処理にif追加だけで中断系を吸収する。"
+    },
+    "solution": {
+      "summary": "中断専用関数とフラグを設け、RunLoop側で早期returnさせる。",
+      "code_example": "if (AbortWinner := AbortMatchWinner?):\n    EndMatchForfeit(AbortWinner)\n    return",
+      "reference_url": null
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03〜04頃",
+      "uefn_version": "不明"
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-025"
+    ],
+    "manifest_section": "6"
+  },
+  {
+    "id": "verse-036",
+    "title": "stat_creator_device はMVVMバインディング前提で設計",
+    "category": "workflow_tip",
+    "tags": [
+      "stat_creator_device",
+      "MVVM",
+      "UI_binding",
+      "single_source"
+    ],
+    "trigger": {
+      "description": "Gold表示やHUD値を複数デバイスから更新するとき",
+      "keywords": [
+        "MVVM",
+        "Stat Creator",
+        "UI同期",
+        "Gold表示"
+      ],
+      "code_patterns": [
+        "GoldStatCreator",
+        "RewardStatCreator",
+        "同一Statを参照"
+      ]
+    },
+    "problem": {
+      "summary": "UI表示値と実コスト計算値が別ソースだと乖離する。",
+      "common_ai_mistake": "表示用変数と購入判定用Statを別管理する。"
+    },
+    "solution": {
+      "summary": "1つのStat Creatorを真実源に統一し、UIはその値にバインド/同期する。",
+      "code_example": "hello_world_device.GoldStatCreator と shop_device.GoldStatCreator と whack_a_mole_target_device.RewardStatCreator を同一Statに揃える",
+      "reference_url": null
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03〜04頃",
+      "uefn_version": "不明"
+    },
+    "severity": "warning",
+    "related_ids": [
+      "verse-012",
+      "verse-013",
+      "verse-029"
+    ],
+    "manifest_section": "7"
+  },
+  {
+    "id": "verse-037",
+    "title": "比較演算子は == ではなく = を使う",
+    "category": "language_constraint",
+    "tags": [
+      "equality",
+      "operator",
+      "syntax",
+      "logic"
+    ],
+    "trigger": {
+      "description": "条件分岐で等価比較を書くとき",
+      "keywords": [
+        "if",
+        "比較",
+        "==",
+        "logic"
+      ],
+      "code_patterns": [
+        "if (A == B):",
+        "if (IsReady == true):"
+      ]
+    },
+    "problem": {
+      "summary": "他言語の比較演算子を持ち込むと構文エラーや意図しない式になる。",
+      "common_ai_mistake": "GPT系/Claude系がPython・JavaScript類推で `==` を生成し、Verseの条件式としてコンパイル不可にする。"
+    },
+    "solution": {
+      "summary": "等価比較は `=` を使い、代入は `set` で分離する。",
+      "code_example": "if (RoundState = Waiting):\n    StartRound()",
+      "reference_url": "https://verselang.github.io/book/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03-31",
+      "uefn_version": "不明"
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-044"
+    ],
+    "manifest_section": "A"
+  },
+  {
+    "id": "verse-038",
+    "title": "変数更新は set 必須（X = Y は代入ではない）",
+    "category": "language_constraint",
+    "tags": [
+      "set",
+      "mutation",
+      "variable",
+      "syntax"
+    ],
+    "trigger": {
+      "description": "カウンタや状態を更新するとき",
+      "keywords": [
+        "set",
+        "var",
+        "mutation",
+        "state update"
+      ],
+      "code_patterns": [
+        "Count = Count + 1",
+        "Score = NewScore"
+      ]
+    },
+    "problem": {
+      "summary": "代入記法を誤ると更新されず、コンパイルエラーまたはロジック破綻になる。",
+      "common_ai_mistake": "GPT系がC系言語の習慣で `Count = Count + 1` を出力し、Verseの更新文脈で `set` を付け忘れる。"
+    },
+    "solution": {
+      "summary": "可変変数は `var` で定義し、更新時は常に `set` を使う。",
+      "code_example": "var Count : int = 0\nset Count = Count + 1",
+      "reference_url": "https://verselang.github.io/book/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03-31",
+      "uefn_version": "不明"
+    },
+    "severity": "critical",
+    "related_ids": [],
+    "manifest_section": "A"
+  },
+  {
+    "id": "verse-039",
+    "title": "Option型は null ではなく false で空を表す",
+    "category": "language_constraint",
+    "tags": [
+      "option",
+      "false",
+      "nullable",
+      "unwrap"
+    ],
+    "trigger": {
+      "description": "プレイヤー参照などを任意値で保持するとき",
+      "keywords": [
+        "option",
+        "?player",
+        "null",
+        "unwrap"
+      ],
+      "code_patterns": [
+        "var Target : ?player = null",
+        "if (Target != null):"
+      ]
+    },
+    "problem": {
+      "summary": "null前提コードはVerseのOptionモデルと合わず、判定と代入が崩れる。",
+      "common_ai_mistake": "Claude系がTypeScript/Java類推で `null` を使い、`?T` の空値表現を誤ってコンパイル不能にする。"
+    },
+    "solution": {
+      "summary": "Optionの空は `false`、取り出しは `if (X := Opt?):` で行う。",
+      "code_example": "var Target : ?player = false\nif (P := Target?):\n    GrantReward(P)",
+      "reference_url": "https://verselang.github.io/book/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03-31",
+      "uefn_version": "不明"
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-064",
+      "verse-065",
+      "verse-066",
+      "verse-067"
+    ],
+    "manifest_section": "A"
+  },
+  {
+    "id": "verse-040",
+    "title": "配列・マップ参照は常に失敗可能式として扱う",
+    "category": "language_constraint",
+    "tags": [
+      "array",
+      "map",
+      "failure_context",
+      "indexing"
+    ],
+    "trigger": {
+      "description": "配列indexやmapキーから値を読むとき",
+      "keywords": [
+        "index access",
+        "map lookup",
+        "failure expression"
+      ],
+      "code_patterns": [
+        "Value := Arr[I]",
+        "V := Dict[Key]",
+        "Arr[I] = X"
+      ]
+    },
+    "problem": {
+      "summary": "存在前提で直接参照すると、境界外や未登録キーで失敗しやすい。",
+      "common_ai_mistake": "GPT系がPythonの `list[i]` と同じ感覚でガードなし参照を生成し、Verseの失敗可能式ルールを無視する。"
+    },
+    "solution": {
+      "summary": "読み取りは `if (V := Container[Key]):` でガードし、書き込みは `set` を使う。",
+      "code_example": "if (Current := Scores[Agent]):\n    set Scores[Agent] = Current + 1\nelse:\n    set Scores[Agent] = 1",
+      "reference_url": "https://verselang.github.io/book/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03-31",
+      "uefn_version": "不明"
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-017"
+    ],
+    "manifest_section": "3.2"
+  },
+  {
+    "id": "verse-041",
+    "title": "イベントSubscribeのハンドラ型はpayloadと完全一致が必要",
+    "category": "api_gotcha",
+    "tags": [
+      "Subscribe",
+      "listenable",
+      "handler signature",
+      "event payload"
+    ],
+    "trigger": {
+      "description": "デバイスイベントにハンドラを接続するとき",
+      "keywords": [
+        "Subscribe",
+        "listenable",
+        "event payload",
+        "signature mismatch"
+      ],
+      "code_patterns": [
+        "Event.Subscribe(OnEvent)",
+        "OnEvent() : void =",
+        "OnEvent(Agent : player) : void ="
+      ]
+    },
+    "problem": {
+      "summary": "payload型が一致しないと購読コードが通らないか、想定外型変換で失敗する。",
+      "common_ai_mistake": "他言語のコールバック推論で『引数なし/任意型』ハンドラを生成し、Verseの厳密シグネチャ一致を満たせない。"
+    },
+    "solution": {
+      "summary": "対象Eventのpayload型（agent, ?agent, tuple等）をdigest/公式で確認して同型で実装する。",
+      "code_example": "OnTriggered(Instigator : ?agent) : void =\n    if (A := Instigator?):\n        HandleAgent(A)\n\nTrigger.TriggeredEvent.Subscribe(OnTriggered)",
+      "reference_url": "https://verselang.github.io/book/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03-31",
+      "uefn_version": "不明"
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-026",
+      "verse-005",
+      "verse-042"
+    ],
+    "manifest_section": "E"
+  },
+  {
+    "id": "verse-042",
+    "title": "agentとplayerを混同しない（player API前に型確定）",
+    "category": "api_gotcha",
+    "tags": [
+      "agent",
+      "player",
+      "cast",
+      "type safety"
+    ],
+    "trigger": {
+      "description": "イベント引数agentからプレイヤー専用処理を呼ぶとき",
+      "keywords": [
+        "agent",
+        "player",
+        "GetPlayers",
+        "cast"
+      ],
+      "code_patterns": [
+        "GrantToPlayer(Agent)",
+        "if (P := player[Agent]):"
+      ]
+    },
+    "problem": {
+      "summary": "agent前提のままplayer専用APIを呼ぶと型不一致で失敗する。",
+      "common_ai_mistake": "GPT系が『agent=player相当』と短絡し、`player[Agent]` の型確定なしでプレイヤー専用関数を直呼びする。"
+    },
+    "solution": {
+      "summary": "player専用処理は `if (P := player[Agent]):` で型確定後に実行する。",
+      "code_example": "HandleElim(Instigator : agent) : void =\n    if (P := player[Instigator]):\n        AwardPlayer(P)",
+      "reference_url": "https://verselang.github.io/book/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03-31",
+      "uefn_version": "不明"
+    },
+    "severity": "warning",
+    "related_ids": [
+      "verse-015",
+      "verse-041",
+      "verse-001"
+    ],
+    "manifest_section": "E"
+  },
+  {
+    "id": "verse-043",
+    "title": "using宣言はVerseモジュールパス形式を厳守",
+    "category": "workflow_tip",
+    "tags": [
+      "using",
+      "module path",
+      "digest",
+      "import"
+    ],
+    "trigger": {
+      "description": "新規デバイス/APIを使うためにimportを書くとき",
+      "keywords": [
+        "using",
+        "module",
+        "/Fortnite.com/Devices",
+        "digest"
+      ],
+      "code_patterns": [
+        "import Fortnite.Devices",
+        "using Fortnite.Devices",
+        "from x import y"
+      ]
+    },
+    "problem": {
+      "summary": "他言語import記法を混ぜると即コンパイル不可になる。",
+      "common_ai_mistake": "Claude/GPTがPython/C#風の `import` 構文を出し、Verseの `using { /... }` 形式を無視する。"
+    },
+    "solution": {
+      "summary": "必ず公式記法 `using { /Domain/Path }` を使い、存在モジュールはdigestで確認する。",
+      "code_example": "using { /Fortnite.com/Devices }\nusing { /Verse.org/Simulation }",
+      "reference_url": "https://verselang.github.io/book/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03-31",
+      "uefn_version": "不明"
+    },
+    "severity": "critical",
+    "related_ids": [],
+    "manifest_section": "A"
+  },
+  {
+    "id": "verse-044",
+    "title": "論理型は bool ではなく logic を使う",
+    "category": "language_constraint",
+    "tags": [
+      "logic",
+      "type",
+      "bool",
+      "syntax"
+    ],
+    "trigger": {
+      "description": "真偽フラグの型注釈を入れるとき",
+      "keywords": [
+        "logic",
+        "bool",
+        "flag",
+        "type annotation"
+      ],
+      "code_patterns": [
+        "var IsStarted : bool = false",
+        "func() : bool ="
+      ]
+    },
+    "problem": {
+      "summary": "bool型注釈を使うと型エラーになりやすい。",
+      "common_ai_mistake": "GPT系がC/TSの癖で `bool` を生成し、Verseの型名 `logic` と不一致を起こす。"
+    },
+    "solution": {
+      "summary": "真偽値の型注釈は `logic` を使う。",
+      "code_example": "var IsStarted : logic = false\nif (IsStarted = true):\n    return",
+      "reference_url": "https://verselang.github.io/book/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03-31",
+      "uefn_version": "不明"
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-037"
+    ],
+    "manifest_section": "A"
+  },
+  {
+    "id": "verse-045",
+    "title": "for反復での早期打ち切りは条件ガードで設計する",
+    "category": "pattern_recommended",
+    "tags": [
+      "for",
+      "loop design",
+      "early exit",
+      "guard"
+    ],
+    "trigger": {
+      "description": "走査途中で処理を止めたくなるとき",
+      "keywords": [
+        "for",
+        "break不可",
+        "early stop",
+        "guard flag"
+      ],
+      "code_patterns": [
+        "for (X : Items):",
+        "break",
+        "return inside for"
+      ]
+    },
+    "problem": {
+      "summary": "forに他言語のbreak前提を持ち込むと設計が破綻しやすい。",
+      "common_ai_mistake": "Python/JS感覚でfor内breakを入れ、Verseの制約を見落として後からloop全面書き換えになる。"
+    },
+    "solution": {
+      "summary": "先に終了条件フラグを設計し、forでは『処理可否ガード』で副作用を抑える。",
+      "code_example": "var Done : logic = false\nfor (P : Players):\n    if (Done = false):\n        if (ShouldStopFor(P) = true):\n            set Done = true\n        else:\n            Process(P)",
+      "reference_url": "https://verselang.github.io/book/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03-31",
+      "uefn_version": "不明"
+    },
+    "severity": "warning",
+    "related_ids": [
+      "verse-023"
+    ],
+    "manifest_section": "3.2"
+  },
+  {
+    "id": "verse-046",
+    "title": "decides呼び出しの[]記法・stat_creatorのtransacts文脈・HUD Showの名前付き引数",
+    "category": "language_constraint",
+    "tags": [
+      "Verse",
+      "UEFN",
+      "decides",
+      "transacts",
+      "no_rollback",
+      "stat_creator_device",
+      "hud_message_device",
+      "failure_context",
+      "spawn"
+    ],
+    "trigger": {
+      "description": "コンパイル時に3511/3512/3509/3513が出て、decides/transacts・HUD API・if条件の失敗可能式ルールに違反している可能性が高い",
+      "keywords": [
+        "Script error 3511",
+        "Script error 3512",
+        "Script error 3509",
+        "Script error 3513",
+        "decides",
+        "transacts",
+        "no_rollback",
+        "GetValue",
+        "SetValue",
+        "Show",
+        "DisplayTime",
+        "spawn"
+      ],
+      "code_patterns": [
+        "StatYen.GetValue(Player)",
+        "StatYen.SetValue(Player, Value)",
+        "HudDevice.Show(Player, Msg, 0.0)",
+        "if (SomeLogic):"
+      ]
+    },
+    "problem": {
+      "summary": "decides付きAPIを丸括弧で呼び、失敗コンテキストと整合しないまま stat_creator_device を読み書きしている。また HUD の Show はオプション引数の渡し方が誤り、if 条件に失敗可能式ではない式を置いている。",
+      "common_ai_mistake": "AIが decides 関数に () を使い [] 必須を破る。transacts/no_rollback を void のイベントハンドラ直下で直接呼び、失敗コンテキストを満たさない。hud_message_device.Show の DisplayTime を位置引数で渡す。logic を if の条件にそのまま置く。"
+    },
+    "solution": {
+      "summary": "GetValue/SetValue は [] で呼ぶ。stat_creator の読み書きは transacts/no_rollback 前提のため、void の購読ハンドラからは spawn で単一コルーチン（suspends 側）に寄せ、ループ本体からの直叩きを避ける。HUD は message ＋ ?DisplayTime := を使う。条件分岐は失敗可能式（例: weak_map の存在束縛）で書く。",
+      "code_example": "if (LoadedYen := StatYen.GetValue[Agent]):\n    set Yen = LoadedYen\n\nif (StatYen.SetValue[Agent, Data.Yen]) {}\n\nYenHudDevice.Show(Agent, YenText(CurrentYen), ?DisplayTime := 0.0)\n\nif (Existing := ActiveIncomeLoops[Player]):\n    return\nspawn{SavePlayerData(Player)}",
+      "reference_url": "https://dev.epicgames.com/documentation/en-us/fortnite/verse-api/fortnitedotcom/devices/stat_creator_device/setvalue"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-01",
+      "uefn_version": "不明"
+    },
+    "severity": "warning",
+    "related_ids": [
+      "verse-070",
+      "verse-075"
+    ],
+    "manifest_section": "3.1"
+  },
+  {
+    "id": "verse-047",
+    "title": "spawn多重起動で同一プレイヤーに収入ループやイベント購読が二重化する",
+    "category": "pattern_antipattern",
+    "tags": [
+      "Verse",
+      "UEFN",
+      "spawn",
+      "冪等",
+      "多重起動",
+      "weak_map",
+      "PlayerAddedEvent"
+    ],
+    "trigger": {
+      "description": "PlayerAddedやボタン連打で同じコルーチンをspawnし続け、SleepループやSubscribeが複数走る",
+      "keywords": [
+        "spawn",
+        "二重起動",
+        "PlayerAddedEvent",
+        "Subscribe",
+        "IncomeLoop",
+        "冪等ガード"
+      ],
+      "code_patterns": [
+        "spawn{IncomeLoop(Player)}",
+        "HandlePlayerAdded(Player): spawn{StartLoop(Player)}",
+        "if (Active[Player]): spawn{...}"
+      ]
+    },
+    "problem": {
+      "summary": "同一キーに対してspawnを無制限に起動すると、タスクが累積しHUD更新・加算・イベント処理がN倍になる。",
+      "common_ai_mistake": "JavaScriptの「イベント来たらaddListener」やUnityの「毎フレームStartCoroutine」に近い発想で、VerseでもPlayerAddedのたびにspawnを重ねる。weak_mapやフラグによる単一起動の言語仕様を知らず、冪等ガードなしのspawnを量産する。"
+    },
+    "solution": {
+      "summary": "プレイヤー単位で「既に起動済み」をweak_mapや整数フラグで保持し、初回のみspawn。解除時は明示的に停止フラグを立てループを抜ける。",
+      "code_example": "if (S := ActivePlayers[Player]): if (S = 1): return\nif (set ActivePlayers[Player] = 1) {}\nspawn{IncomeLoop(Player)}",
+      "reference_url": "https://dev.epicgames.com/documentation/en-us/uefn/map-in-verse"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03-31",
+      "uefn_version": ""
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-048",
+      "verse-081"
+    ],
+    "manifest_section": "C"
+  },
+  {
+    "id": "verse-048",
+    "title": "Sleepループに退出・無効化の停止条件がなく永久に回り続ける",
+    "category": "pattern_antipattern",
+    "tags": [
+      "Verse",
+      "UEFN",
+      "loop",
+      "Sleep",
+      "suspends",
+      "停止条件",
+      "PlayerRemovedEvent"
+    ],
+    "trigger": {
+      "description": "Incomeやポーリングをloop+Sleepで回すが、プレイヤー退出後もbreak条件がなく走り続ける",
+      "keywords": [
+        "loop",
+        "Sleep",
+        "break",
+        "PlayerRemovedEvent",
+        "クリーンアップ"
+      ],
+      "code_patterns": [
+        "loop: Sleep(1.0)",
+        "loop: Sleep(1.0) # breakなし"
+      ]
+    },
+    "problem": {
+      "summary": "プレイヤーがいなくなった後もコルーチンが生き続け、空参照や無駄処理、予期しないデバイス呼び出しを誘発する。",
+      "common_ai_mistake": "「while true」やゲームのメインループ前提で、常に終わらないループをそのままVerseに書く。PlayerRemovedでweak_mapを消す・フラグを落とす・breakする、というマニフェストの停止条件設計を書かない。"
+    },
+    "solution": {
+      "summary": "loop本体は薄くし、退出検知・Activeフラグ・weak_mapの存在を毎ティック確認してbreak。終了時にフラグを確実に更新。",
+      "code_example": "loop:\n    Sleep(1.0)\n    if (S := ActivePlayers[Player]): if (S = 0): break\n    else: break",
+      "reference_url": "https://verselang.github.io/book/14_concurrency/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03-31",
+      "uefn_version": ""
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-047",
+      "verse-052",
+      "verse-079"
+    ],
+    "manifest_section": "C"
+  },
+  {
+    "id": "verse-049",
+    "title": "persistableクラスにフィールド追加時は必ずデフォルト値で後方互換を取る",
+    "category": "pattern_recommended",
+    "tags": [
+      "Verse",
+      "UEFN",
+      "persistable",
+      "weak_map",
+      "後方互換",
+      "スキーマ"
+    ],
+    "trigger": {
+      "description": "リリース後のマップ更新でplayer_save_data等に項目を足す",
+      "keywords": [
+        "persistable",
+        "class",
+        "デフォルト値",
+        "フィールド追加",
+        "マイグレーション"
+      ],
+      "code_patterns": [
+        "class<final><persistable>:",
+        "NewField : int"
+      ]
+    },
+    "problem": {
+      "summary": "既存プレイヤー保存データに新フィールドが無い状態で読み込むと、デフォルト設計がないと復元失敗や未定義相当の不整合が起きうる。",
+      "common_ai_mistake": "TypeScriptのoptionalやC#の[Optional]の感覚で、Verseのpersistableフィールドに「後から足すだけ」とし、Epicが要求する「全フィールドにデフォルト」ルールを無視して宣言する。"
+    },
+    "solution": {
+      "summary": "追加フィールドは必ず `Name : type = default` とし、読み込み側は欠損を想定しない(デフォルトで埋まる前提)。削除は避け、非推奨は残して読む。フィールドが増えて分岐が複雑になる場合は `SchemaVersion : int = 1` を persistable に持ち、版ごとに安全に埋める段階移行を検討する（Tycoon系の棚・ステージ拡張で実用的）。",
+      "code_example": "BonusRate : float = 1.0\nSchemaVersion : int = 1",
+      "reference_url": "https://dev.epicgames.com/documentation/en-us/fortnite/verse-persistence-best-practices"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03-31",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [
+      "verse-050",
+      "verse-060",
+      "verse-062"
+    ],
+    "manifest_section": "D"
+  },
+  {
+    "id": "verse-050",
+    "title": "デフォルト値なしでpersistableにフィールド追加し既存セーブが読めない・壊れる",
+    "category": "pattern_antipattern",
+    "tags": [
+      "Verse",
+      "UEFN",
+      "persistable",
+      "破損",
+      "セーブ",
+      "後方互換"
+    ],
+    "trigger": {
+      "description": "アップデートでフィールドを追加した直後、古いクライアントデータやテストデータで起動すると例外や値ズレが発生",
+      "keywords": [
+        "persistable",
+        "デフォルト値なし",
+        "読み込みエラー",
+        "スキーマ変更"
+      ],
+      "code_patterns": [
+        "NewStat : int"
+      ]
+    },
+    "problem": {
+      "summary": "永続スキーマとディスク上データの版差を吸収できず、進行不能や統計の誤表示に繋がる。",
+      "common_ai_mistake": "「nullで来るからifで初期化」とSQLやJSONの発想でコード側だけ補完し、persistable宣言側のデフォルト必須を省く。あるいはフィールド名だけ変えて旧データを読み捨てる設計に気づかない。"
+    },
+    "solution": {
+      "summary": "全フィールドにデフォルトを付与し、必要ならバージョン番号フィールドを別途persistableに持って段階移行する。アップデートで経済・棚・ステージの意味が変わるゲームでは、SchemaVersion と併せて GDD 上のID対応表（棚IDとコスト・収入）をリポジトリで固定し、コードの @editable デフォルトと齟齬が出ないようレビューする。",
+      "code_example": "SchemaVersion : int = 1",
+      "reference_url": "https://dev.epicgames.com/documentation/en-us/fortnite/using-persistable-data-in-verse"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03-31",
+      "uefn_version": ""
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-049",
+      "verse-060",
+      "verse-062"
+    ],
+    "manifest_section": "D"
+  },
+  {
+    "id": "verse-051",
+    "title": "ソロテストでは通るが複数人同時接続でweak_mapやデバイス競合が顕在化する",
+    "category": "workflow_tip",
+    "tags": [
+      "Verse",
+      "UEFN",
+      "マルチプレイ",
+      "weak_map",
+      "player",
+      "競合"
+    ],
+    "trigger": {
+      "description": "1人で検証後、2人目以降の同時参加・同時購入・同時セーブで不具合報告",
+      "keywords": [
+        "2人",
+        "同時",
+        "weak_map",
+        "player",
+        "干渉"
+      ],
+      "code_patterns": [
+        "PlayerDataMap[Player]",
+        "GetPlayers()"
+      ]
+    },
+    "problem": {
+      "summary": "グローバル単一変数や「プレイヤー固定」前提のロジックが、複数playerキーで衝突する。",
+      "common_ai_mistake": "シングルプレイゲームの疑似コードや、グローバルstaticに近い思考で、必ずplayerキーで分離すべきweak_map設計を省き、テストも1人のみで完了とする。"
+    },
+    "solution": {
+      "summary": "テストケースに「2人同時」「交互操作」を必須化。データはplayerスコープで分離し、共有資源は順序非保証前提で直列化または冪等化。",
+      "code_example": "",
+      "reference_url": "https://dev.epicgames.com/documentation/en-us/fortnite/verse-api/versedotorg/verse/weak_map"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03-31",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [],
+    "manifest_section": "G"
+  },
+  {
+    "id": "verse-052",
+    "title": "途中退出時にループ・購読・フラグのクリーンアップ漏れでゴースト処理が残る",
+    "category": "pattern_antipattern",
+    "tags": [
+      "Verse",
+      "UEFN",
+      "PlayerRemovedEvent",
+      "クリーンアップ",
+      "spawn",
+      "weak_map"
+    ],
+    "trigger": {
+      "description": "PlayerRemoved後もIncomeLoopやタイマーが動き続け、退出済みplayerへSetValueや加算を試みる",
+      "keywords": [
+        "PlayerRemovedEvent",
+        "クリーンアップ",
+        "break",
+        "Cancel"
+      ],
+      "code_patterns": [
+        "PlayerRemovedEvent().Subscribe",
+        "IncomeLoop(Player)"
+      ]
+    },
+    "problem": {
+      "summary": "リソースリークとログノイズ、稀に別セッションへ汚染する。マニフェストの中断フロー要件に反する。",
+      "common_ai_mistake": "ブラウザのページ離脱=ガベージコレクションの感覚で、コルーチン停止を書かない。PlayerRemovedでフラグのみ落としても、ループがbreak条件を見ていないケースを見落とす。"
+    },
+    "solution": {
+      "summary": "退出時にActiveを0にし、ループは毎回プレイヤー生存とフラグを確認してbreak。必要ならcancelableや専用のShutdown関数を用意。",
+      "code_example": "if (set ActivePlayers[Player] = 0) {}",
+      "reference_url": "https://verselang.github.io/book/14_concurrency/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03-31",
+      "uefn_version": ""
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-048",
+      "verse-074",
+      "verse-078",
+      "verse-079",
+      "verse-080",
+      "verse-081"
+    ],
+    "manifest_section": "G"
+  },
+  {
+    "id": "verse-053",
+    "title": "参加者0人の状態で「誰もいないから起動しない」分岐に依存しゲームが進まない",
+    "category": "device_behavior",
+    "tags": [
+      "Verse",
+      "UEFN",
+      "参加者0",
+      "GetPlayers",
+      "timer_device",
+      "フォールバック"
+    ],
+    "trigger": {
+      "description": "ロビー待ちやテスト開始直後に参加者が0のとき、ラウンド開始・タイマー・初期化が一度も走らない",
+      "keywords": [
+        "参加者0",
+        "GetPlayers",
+        "空マッチ",
+        "初期化"
+      ],
+      "code_patterns": [
+        "if (Playspace.GetPlayers().Length = 0):",
+        "for (Player : GetPlayers())"
+      ]
+    },
+    "problem": {
+      "summary": "マニフェストが求める「0参加開始」フォールバックや、イベント順序非保証への耐性がなく、稀に詰む。verse-019(タイマー特化)と重ならないよう、一般の「参加者駆動初期化」に焦点を当てる。",
+      "common_ai_mistake": "「プレイヤーが来たらPlayerAddedで初期化」とだけ書き、0人開始時の再試行・遅延初期化・代替トリガを書かない。timer_deviceの0人挙動(verse-019)とは別に、GetPlayers()空配列で何もしない関数を連鎖させる。"
+    },
+    "solution": {
+      "summary": "0人でも安全に進む待機ループ、または最初のParticipantAdded/遅延tickで初期化する二段構え。timer_deviceは別途フォールバック表示を持つ(マニフェスト5.3)。",
+      "code_example": "",
+      "reference_url": "https://dev.epicgames.com/documentation/en-us/uefn/map-in-verse"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03-31",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [
+      "verse-019"
+    ],
+    "manifest_section": "G"
+  },
+  {
+    "id": "verse-054",
+    "title": "UI表示値とゲーム内実値の真実源が二重化し同期ズレやチート耐性低下を招く",
+    "category": "pattern_antipattern",
+    "tags": [
+      "Verse",
+      "UEFN",
+      "MVVM",
+      "stat_creator_device",
+      "HUD",
+      "Single Source of Truth"
+    ],
+    "trigger": {
+      "description": "HUD用変数と通貨ロジック用変数を別々に更新し、どちらかが古いままになる",
+      "keywords": [
+        "表示",
+        "真実源",
+        "二重管理",
+        "stat",
+        "HUD"
+      ],
+      "code_patterns": [
+        "var DisplayYen",
+        "SetValue[",
+        "Show("
+      ]
+    },
+    "problem": {
+      "summary": "実装前チェックの「UIと実値の真実源統一」に反し、デバッグ不能なズレが発生する。",
+      "common_ai_mistake": "ReactのuseStateのように「表示用state」と「サーバ値」をAIが二重に生成し、片方だけAddYenする。正本§7の「stat中心同期」や「表示は真実源から導出」を読まず、statを飾りにする。"
+    },
+    "solution": {
+      "summary": "通貨・ステージ等の権威は1箇所(weak_map+persistable等)。UIは常にそこから読み取り、stat_creatorは表示専用にプッシュのみ。",
+      "code_example": "CurrentYen := PlayerDataManager.GetYen(Player)\nif (StatYenDisplay.SetValue[Agent, CurrentYen]) {}",
+      "reference_url": "https://dev.epicgames.com/documentation/en-us/fortnite/using-stat-creator-devices-in-fortnite-creative"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03-31",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [],
+    "manifest_section": "2"
+  },
+  {
+    "id": "verse-055",
+    "title": "正常終了と異常終了(退出・タイムアウト)が同一関数に混在し再入や状態汚染を起こす",
+    "category": "pattern_recommended",
+    "tags": [
+      "Verse",
+      "UEFN",
+      "終了条件",
+      "中断",
+      "冪等",
+      "マッチ進行"
+    ],
+    "trigger": {
+      "description": "EndGameに勝敗・切断・タイマーを全部突っ込み、二重呼び出しで二重報酬や二重テレポートが発生",
+      "keywords": [
+        "正常終了",
+        "異常終了",
+        "タイムアウト",
+        "退出",
+        "EndMatch"
+      ],
+      "code_patterns": [
+        "EndRound(",
+        "PlayerRemovedEvent"
+      ]
+    },
+    "problem": {
+      "summary": "マニフェストの「終了条件の分離」に反し、同じイベントが複数来たときに壊れる(冪等性なし)。",
+      "common_ai_mistake": "単一の「ゲーム終了」関数に全経路を集約し、ガードフラグもラウンドIDも持たない。異常系をcatch相当で握りつぶすPython/JSのパターンを持ち込む。"
+    },
+    "solution": {
+      "summary": "正常終了・中断・タイムアウトを別関数に分け、各経路で冪等ガード(ラウンドID・既処理フラグ)を入れる。",
+      "code_example": "",
+      "reference_url": "https://verselang.github.io/book/14_concurrency/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03-31",
+      "uefn_version": ""
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-074",
+      "verse-078",
+      "verse-081"
+    ],
+    "manifest_section": "2"
+  },
+  {
+    "id": "verse-056",
+    "title": "if条件節の中でstat_creatorやHUDなどno_rollback系デバイス操作を呼びエフェクト衝突する",
+    "category": "language_constraint",
+    "tags": [
+      "Verse",
+      "UEFN",
+      "if",
+      "failure_context",
+      "no_rollback",
+      "SetValue"
+    ],
+    "trigger": {
+      "description": "コンパイルエラー3512や実行時の失敗コンテキスト違反として顕在化",
+      "keywords": [
+        "if",
+        "条件節",
+        "SetValue",
+        "no_rollback",
+        "失敗可能式"
+      ],
+      "code_patterns": [
+        "if (Stat.SetValue[Agent, 1]) {}",
+        "if (PlayerDataMap[Player]):"
+      ]
+    },
+    "problem": {
+      "summary": "マニフェストB「条件節に重い副作用を入れない」に反し、失敗可能性と副作用が絡みデバッグが困難になる。",
+      "common_ai_mistake": "C言語のif内代入 `if (x = foo())` や、Pythonの真理値チェックに近い発想で、Verseの「条件は失敗可能式」ルールを無視してSetValueを条件に入れる。"
+    },
+    "solution": {
+      "summary": "条件と副作用を分離。先に分岐に必要な値だけを束縛し、デバイス更新は本体ブロックで実行。",
+      "code_example": "if (Ok := SomeQuery[Player]):\n    if (StatYenDisplay.SetValue[Agent, Yen]) {}",
+      "reference_url": "https://verselang.github.io/book/13_effects/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03-31",
+      "uefn_version": ""
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-017",
+      "verse-057"
+    ],
+    "manifest_section": "B"
+  },
+  {
+    "id": "verse-057",
+    "title": "条件節にweak_map書き込み・デバイス操作・ログを詰め込み可読性と効果整合を壊す",
+    "category": "pattern_antipattern",
+    "tags": [
+      "Verse",
+      "UEFN",
+      "if",
+      "副作用",
+      "失敗可能式",
+      "verse-017"
+    ],
+    "trigger": {
+      "description": "「短く書きたい」ためにifの一行に束縛と副作用を詰め、レビュー不能になる",
+      "keywords": [
+        "条件節",
+        "副作用",
+        "weak_map",
+        "set"
+      ],
+      "code_patterns": [
+        "if (set Map[Player] = x):",
+        "if (Device.Do()):"
+      ]
+    },
+    "problem": {
+      "summary": "verse-017の一般化として、stat以外のデバイスやmap更新も条件節に入れると同種の事故が起きる。",
+      "common_ai_mistake": "三項演算子やワンライナー好きのAIが、Verseの「条件は失敗可能式のみ」という制約を踏み外し、条件式の中にトランザクション相当の操作をねじ込む。"
+    },
+    "solution": {
+      "summary": "条件節は束縛と比較に限定。副作用は直後のブロックへ。複雑ならローカル変数に分解。",
+      "code_example": "if (Data := PlayerDataMap[Player]):\n    NewData := ...\n    if (set PlayerDataMap[Player] = NewData) {}",
+      "reference_url": null
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03-31",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [
+      "verse-017",
+      "verse-056"
+    ],
+    "manifest_section": "B"
+  },
+  {
+    "id": "verse-058",
+    "title": "公式URLやdigestなしに「この書き方で動きます」とAIが断定する",
+    "category": "workflow_tip",
+    "tags": [
+      "Verse",
+      "UEFN",
+      "AI",
+      "公式ドキュメント",
+      "根拠"
+    ],
+    "trigger": {
+      "description": "レビューで一次情報なしのコードが通り、後からVerse更新で破綻する",
+      "keywords": [
+        "AI",
+        "ハルシネーション",
+        "公式",
+        "根拠"
+      ],
+      "code_patterns": []
+    },
+    "problem": {
+      "summary": "マニフェスト§8の「重要処理に公式根拠必須」に反し、推測実装が資産化する。",
+      "common_ai_mistake": "ChatGPT系の汎用Verseっぽい文章を信じ、Fortnite.digest.verseやdev.epicgames.comを検索せずに、Python風・C#風のAPI名をそのまま出力する。"
+    },
+    "solution": {
+      "summary": "変更点ごとにEpicドキュメントURLまたはdigest該当行をPR/コメントに貼る。AI出力は必ず一次情報で照合。",
+      "code_example": "",
+      "reference_url": "https://dev.epicgames.com/documentation/en-us/fortnite/fortnite-documentation-home"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03-31",
+      "uefn_version": ""
+    },
+    "severity": "info",
+    "related_ids": [
+      "verse-059"
+    ],
+    "manifest_section": "8"
+  },
+  {
+    "id": "verse-059",
+    "title": "存在しないVerse API・モジュールパス・デバイスメソッドをAIが生成する",
+    "category": "api_gotcha",
+    "tags": [
+      "Verse",
+      "UEFN",
+      "AI",
+      "API",
+      "digest",
+      "コンパイル"
+    ],
+    "trigger": {
+      "description": "コンパイルエラーや、実行時に該当シンボルなしとして失敗",
+      "keywords": [
+        "存在しない",
+        "API",
+        "import",
+        "パス"
+      ],
+      "code_patterns": [
+        "using { /Made.Up/Path }",
+        "SomeDevice.NonexistentMethod()"
+      ]
+    },
+    "problem": {
+      "summary": "ビルド不能と時間損失。チームの「正しい依存パッケージ」ルールを汚染する。",
+      "common_ai_mistake": "他言語の標準ライブラリ名や、UEのBlueprint名をVerseにそのまま貼る。Cursorが過去の幻のサンプルを補完し、/Fortnite.com以外の架空パスを提案する。"
+    },
+    "solution": {
+      "summary": "vprojectの依存(Verse/Fortnite/UnrealEngine)内のdigestでシンボル検証。新APIは公式リリースノートとセットで採用。",
+      "code_example": "",
+      "reference_url": null
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-03-31",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [
+      "verse-058"
+    ],
+    "manifest_section": "8"
+  },
+  {
+    "id": "verse-060",
+    "title": "バランス調整値は@editableをOnBeginでruntime mapに集約する",
+    "category": "pattern_recommended",
+    "tags": [
+      "editable",
+      "OnBegin",
+      "map",
+      "tycoon",
+      "balance",
+      "GDD"
+    ],
+    "trigger": {
+      "description": "棚コスト・¥/秒収入など、数値バランスをコード内リテラルや巨大な固定mapで持ち続けているとき",
+      "keywords": [
+        "@editable",
+        "OnBegin",
+        "set",
+        "map",
+        "ShelfIncome",
+        "ShelfCost"
+      ],
+      "code_patterns": [
+        "var ShelfIncomeTable : [int]int = map{}",
+        "set ShelfIncomeTable = map{",
+        "set ShelfCosts = map{"
+      ]
+    },
+    "problem": {
+      "summary": "UEFNエディタから数値だけ変えたいのにコード修正が必要になり、GDD変更のたびにデプロイコストが上がる。",
+      "common_ai_mistake": "TypeScriptのconstオブジェクトやC#のstatic readonly Dictionaryのように、コンパイル時固定のmapをそのままVerseに書き、後から調整できない前提で量産する。"
+    },
+    "solution": {
+      "summary": "各キー（例: ShelfId）ごとに@editableフィールドを置き、OnBeginで一度だけ `set RuntimeTable = map{ ... }` として構築する。ロジックはRuntimeTableのみ参照し、デフォルト値はGDDと一致させる。",
+      "code_example": "@editable Shelf0Income : int = 1\n...\nOnBegin<override>()<suspends> : void =\n    set ShelfIncomeTable = map{\n        0 => Shelf0Income,\n        1 => Shelf1Income\n    }",
+      "reference_url": "https://verselang.github.io/book/03_containers/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [
+      "verse-049",
+      "verse-050",
+      "verse-062"
+    ],
+    "manifest_section": "4"
+  },
+  {
+    "id": "verse-061",
+    "title": "Verse Memory MCPの疎通はlist_verse_categoriesで確認しListMcpResourcesは盲信しない",
+    "category": "workflow_tip",
+    "tags": [
+      "MCP",
+      "Cursor",
+      "verse-memory",
+      "tool",
+      "resource"
+    ],
+    "trigger": {
+      "description": "CursorでMCPを追加したが、リソース一覧が空で接続失敗と誤認したとき",
+      "keywords": [
+        "ListMcpResources",
+        "MCP",
+        "verse-memory",
+        "stdio"
+      ],
+      "code_patterns": []
+    },
+    "problem": {
+      "summary": "resource提供型ではないMCPサーバーでは一覧が空になり、接続不良と誤判断しやすい。",
+      "common_ai_mistake": "OpenAI APIやRESTのヘルスチェック感覚で、ListMcpResourcesの件数だけを成功条件にし、tool専用サーバーを切り捨てる。"
+    },
+    "solution": {
+      "summary": "`list_verse_categories`（または同等のtool呼び出し）が成功しカテゴリ件数が返れば正常とみなす。Cursorログでstdio接続成功を併せて確認する。",
+      "code_example": null,
+      "reference_url": null
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "info",
+    "related_ids": [],
+    "manifest_section": "E"
+  },
+  {
+    "id": "verse-062",
+    "title": "棚（ShelfId）を増やすときは5点セットで差分漏れを防ぐ",
+    "category": "workflow_tip",
+    "tags": [
+      "tycoon",
+      "shelf",
+      "GDD",
+      "checklist",
+      "Stage"
+    ],
+    "trigger": {
+      "description": "GDDで棚本数が増え、新しいShelfIdを追加するとき",
+      "keywords": [
+        "ShelfId",
+        "棚拡張",
+        "GDD",
+        "Stage",
+        "button_device",
+        "prop_mover_device"
+      ],
+      "code_patterns": [
+        "Shelf14Button",
+        "ShelfRequiredStages",
+        "ShelfIncomeTable"
+      ]
+    },
+    "problem": {
+      "summary": "ボタンとビジュアルだけ追加し、コストmap・収入表・ステージ要件のどれかが古いままになり、購入不可や経済崩壊が起きる。",
+      "common_ai_mistake": "ExcelやNotionの表だけ更新し、Verse側の@editable・OnBegin map・Subscribeの3箇所の同期を忘れる。UnityのPrefab複製のようにデバイスだけ増やせば動くと考える。"
+    },
+    "solution": {
+      "summary": "同一ShelfIdについて次を一括で更新する: (1) button_device購読とハンドラ (2) prop_mover_deviceとBegin (3) ShelfCosts構築 (4) ShelfRequiredStages (5) ShelfIncomeTable構築。GDDの表とコードのデフォルト値を突き合わせる。",
+      "code_example": "# チェック例: ShelfId 9〜14 を追加したら\n# - Shelf9Button..Shelf14Button + HandleShelf9..14\n# - Shelf9Visual..Shelf14Visual + ShowShelfVisual分岐\n# - set ShelfCosts に 9..14\n# - ShelfRequiredStages に 9..14\n# - set ShelfIncomeTable に 9..14",
+      "reference_url": "https://verselang.github.io/book/03_containers/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [
+      "verse-049",
+      "verse-050",
+      "verse-060"
+    ],
+    "manifest_section": "4"
+  },
+  {
+    "id": "verse-063",
+    "title": "ビットフラグで棚所持を保持する場合、ShelfId上限とDecode範囲を拡張と同時に見直す",
+    "category": "pattern_recommended",
+    "tags": [
+      "bitflag",
+      "shelf",
+      "Pow2",
+      "weak_map",
+      "persistable"
+    ],
+    "trigger": {
+      "description": "PurchasedShelvesBitflag のように整数ビットで棚を表し、棚本数やShelfIdの最大値を増やすとき",
+      "keywords": [
+        "bitflag",
+        "PurchasedShelves",
+        "Pow2",
+        "DecodeBitflag",
+        "ShelfId"
+      ],
+      "code_patterns": [
+        "HasShelf(Player, ShelfId)",
+        "ShelfId >= 30",
+        "DecodeBitflag"
+      ]
+    },
+    "problem": {
+      "summary": "新しいShelfIdがビット演算の想定上限を超えると、購入済み判定や復元ループが黙って欠落する。",
+      "common_ai_mistake": "JavaScriptのビット演算やCのuint32前提で、Verseのintとループ上限（例: Index < 30）を見ずにIDだけ増やす。"
+    },
+    "solution": {
+      "summary": "HasShelf / AddShelf / DecodeBitflag / EncodeBitflag で使うShelfIdの上限を一箇所に定義し、GDDの最大棚数と必ず一致させる。上限を上げるときはPow2オーバーフローと復元ループの終了条件も再確認する。",
+      "code_example": "# 例: if (ShelfId < 0 or ShelfId >= 30) を業務要件の最大棚数に合わせて更新\n# DecodeBitflag の loop 終了 Index も同じ上限に揃える",
+      "reference_url": "https://dev.epicgames.com/documentation/en-us/fortnite/using-persistable-data-in-verse"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [],
+    "manifest_section": "4"
+  },
+  {
+    "id": "verse-064",
+    "title": "Optionの空はfalse、?で失敗可能に変換する",
+    "category": "language_constraint",
+    "tags": [
+      "option",
+      "false",
+      "query operator",
+      "failable expression",
+      "unwrapping"
+    ],
+    "trigger": {
+      "description": "Option値の空判定や、?演算子でoption⇔failureを扱うとき",
+      "keywords": [
+        "option",
+        "false",
+        "?",
+        "failable",
+        "unwrapping"
+      ],
+      "code_patterns": [
+        "Maybe:?int = false",
+        "Value := Maybe?",
+        "Empty:?T = false"
+      ]
+    },
+    "problem": {
+      "summary": "他言語のnull/例外の感覚で扱い、空optionをunwrapするときのfailureを適切に扱えない（誤った制御フローやコンパイルエラー）。",
+      "common_ai_mistake": "GPT系がPythonのNoneと混同し、Verseで `if (Opt != None) { ... }` のようにnull比較を行うコードを生成する"
+    },
+    "solution": {
+      "summary": "空のOptionは`false`。`X := Opt?`は失敗可能で、空なら失敗として制御フローに反映させる。",
+      "code_example": "❌ AIが誤る例:\nOpt:?int = false\nif (Opt != false):\n    Print(\"Got\")\n\n✅ 正しい例:\nOpt:?int = false\nif (Val := Opt?):\n    Print(\"Got {Val}\")",
+      "reference_url": "https://verselang.github.io/book/08_failure/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [
+      "verse-039"
+    ],
+    "manifest_section": "8"
+  },
+  {
+    "id": "verse-065",
+    "title": "Maybe?（unwrap）は必ずfailure context内で行う",
+    "category": "api_gotcha",
+    "tags": [
+      "option",
+      "unwrap",
+      "failure context",
+      "if",
+      "for",
+      "decides body"
+    ],
+    "trigger": {
+      "description": "`MaybeValue?`でOptionを取り出すとき",
+      "keywords": [
+        "?",
+        "unwrap",
+        "failure context",
+        "if",
+        "for",
+        "decides"
+      ],
+      "code_patterns": [
+        "Value := Maybe?",
+        "Other := Empty?",
+        "if (Value := Opt?)"
+      ]
+    },
+    "problem": {
+      "summary": "失敗可能式（`Opt?`）を failure context 外で評価しようとして、コンパイル不可、または設計意図と異なる分岐になる。",
+      "common_ai_mistake": "Claude系がJavaのOptional#getと混同し、Verseで `Val : int = Opt?` のように通常代入でアンラップするコードを生成する"
+    },
+    "solution": {
+      "summary": "`if (Val := Opt?)` / `for (..., Val := Opt?):` / `<decides>`関数本体など、失敗を扱える場所に置く。",
+      "code_example": "❌ AIが誤る例:\nVal:int = Opt?  # failure context外として書こうとする\n\n✅ 正しい例:\nif (Val := Opt?):\n    Do(Val)",
+      "reference_url": "https://verselang.github.io/book/08_failure/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-017",
+      "verse-039",
+      "verse-066",
+      "verse-067"
+    ],
+    "manifest_section": "8"
+  },
+  {
+    "id": "verse-066",
+    "title": "option{...}はfailureを空Optionに変換する（逆変換）",
+    "category": "api_gotcha",
+    "tags": [
+      "option{}",
+      "failure",
+      "interchange",
+      "empty option",
+      "conversion"
+    ],
+    "trigger": {
+      "description": "失敗可能式をOptionに包み、失敗を握りつぶしたいとき",
+      "keywords": [
+        "option{}",
+        "failure",
+        "empty option",
+        "failable expression"
+      ],
+      "code_patterns": [
+        "Result := option{RiskyExpr[]}"
+      ]
+    },
+    "problem": {
+      "summary": "失敗をOptionに変換できる点を理解せず、失敗をtry/catchのように扱おうとして破綻する。",
+      "common_ai_mistake": "GPT系がJavaScriptのtry/catchと混同し、Verseで `try { Risky[] } catch { ... }` 相当の発想で書くコードを生成する"
+    },
+    "solution": {
+      "summary": "`option{...}`でfailureを空Option（`false`）にできるので、後段は通常のOption unwrapで制御する。",
+      "code_example": "❌ AIが誤る例:\n# 失敗可能式をそのまま代入/例外処理しようとする\nRes:?int = Risky[]\n\n✅ 正しい例:\nRes:?int = option{Risky[]}\nif (Val := Res?):\n    Do(Val)",
+      "reference_url": "https://verselang.github.io/book/08_failure/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [
+      "verse-065",
+      "verse-039"
+    ],
+    "manifest_section": "8"
+  },
+  {
+    "id": "verse-067",
+    "title": "入れ子Option（??T）は段階アンラップが必要",
+    "category": "language_constraint",
+    "tags": [
+      "nested option",
+      "??T",
+      "staged unwrap",
+      "failure context"
+    ],
+    "trigger": {
+      "description": "入れ子Option（例: `??int`）を扱うとき",
+      "keywords": [
+        "??T",
+        "nested",
+        "option",
+        "unwrap",
+        "if binding"
+      ],
+      "code_patterns": [
+        "Double:??int = option{option{...}}",
+        "if (Inner := Double?):",
+        "if (Val := Inner?):"
+      ]
+    },
+    "problem": {
+      "summary": "入れ子Optionを単段アンラップで取り出そうとして型不一致や意図しない失敗になる。",
+      "common_ai_mistake": "GPT系がJavaのDouble Optionalと混同し、Verseで `if (Val := Double?):` の1回だけで内側`int`を得られると誤解するコードを生成する"
+    },
+    "solution": {
+      "summary": "外側unwrap→内側unwrapの2段（それぞれfailure context内）で段階的に取り出す。",
+      "code_example": "❌ AIが誤る例:\n# Double:??int を int として扱おうとする\nif (Val := Double?):\n    Print(\"{Val}\")\n\n✅ 正しい例:\nif (Inner := Double?):\n    if (Val := Inner?):\n        Print(\"{Val}\")",
+      "reference_url": "https://verselang.github.io/book/08_failure/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-065",
+      "verse-039"
+    ],
+    "manifest_section": "8"
+  },
+  {
+    "id": "verse-068",
+    "title": "decidesコンテキストの比較演算は左辺値を返す（失敗で枝が変わる）",
+    "category": "api_gotcha",
+    "tags": [
+      "decides",
+      "comparison",
+      "validation",
+      "return left",
+      "failure"
+    ],
+    "trigger": {
+      "description": "<decides>関数/失敗可能文脈で比較演算を置くとき",
+      "keywords": [
+        "<decides>",
+        "comparison",
+        "returns left",
+        "failure",
+        "validation"
+      ],
+      "code_patterns": [
+        "X > 0",
+        "X <> Y",
+        "Value >= LwrBnd and Value <= UprBnd"
+      ]
+    },
+    "problem": {
+      "summary": "比較が真偽値を返すと思い込み、success時の戻り値を扱えずに制御フローが崩れる。",
+      "common_ai_mistake": "Claude系がC#のbool比較と混同し、Verseで `if (X > 0): ...` のXをそのままboolとして扱うコードを生成する"
+    },
+    "solution": {
+      "summary": "decides文脈の比較は成功時に左辺値を返すため、その戻り値として束縛/使用する。",
+      "code_example": "❌ AIが誤る例:\nGetIfPositive(X:int)<decides>:int =\n    if (X > 0):\n        1  # boolのつもりで誤った返し\n\n✅ 正しい例:\nGetIfPositive(X:int)<decides>:int =\n    X > 0  # 成功でXを返し、失敗で失敗する",
+      "reference_url": "https://verselang.github.io/book/08_failure/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [
+      "verse-001",
+      "verse-017"
+    ],
+    "manifest_section": "8"
+  },
+  {
+    "id": "verse-069",
+    "title": "failureコンテキストで状態変更するなら<transacts> / <decides>が必要（投機→ロールバック）",
+    "category": "pattern_antipattern",
+    "tags": [
+      "speculative execution",
+      "rollback",
+      "failure context",
+      "transacts",
+      "decides"
+    ],
+    "trigger": {
+      "description": "failure context内で`set`を含む状態更新を行うとき",
+      "keywords": [
+        "failure context",
+        "speculative execution",
+        "rollback",
+        "transacts",
+        "decides",
+        "set"
+      ],
+      "code_patterns": [
+        "set X = X - Cost",
+        "<transacts><decides>",
+        "PlayerGold < 0"
+      ]
+    },
+    "problem": {
+      "summary": "失敗時に変更がロールバックされる前提を理解せず、効果が部分的に残って経済/進行が壊れる。",
+      "common_ai_mistake": "GPT系がPythonの例外後にfinallyで整合すると混同し、Verseで失敗しても`set`結果が残る設計を前提にするコードを生成する"
+    },
+    "solution": {
+      "summary": "failure contextで状態を更新する関数には、`<transacts>` または `<decides>` を付けて投機実行とロールバックを安全にする。",
+      "code_example": "❌ AIが誤る例:\nAttemptPurchase()<decides>:void =\n    set Gold = Gold - Cost\n    Gold >= 0  # 失敗時に戻る保証前提で設計\n\n✅ 正しい例:\nAttemptPurchase()<transacts><decides>:void =\n    set Gold = Gold - Cost\n    Gold >= 0  # 失敗なら変更は自動ロールバック",
+      "reference_url": "https://verselang.github.io/book/08_failure/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-003",
+      "verse-017"
+    ],
+    "manifest_section": "8"
+  },
+  {
+    "id": "verse-070",
+    "title": "effectsは伝播する：呼び出し元も同等の効果宣言が必要",
+    "category": "api_gotcha",
+    "tags": [
+      "effects",
+      "propagation",
+      "call chain",
+      "transacts",
+      "reads",
+      "decides"
+    ],
+    "trigger": {
+      "description": "別関数の効果（transacts/decides/suspends等）を呼び出し元で隠したいとき",
+      "keywords": [
+        "effects compose",
+        "propagation",
+        "call chain",
+        "signature"
+      ],
+      "code_patterns": [
+        "<transacts>",
+        "<decides>",
+        "<suspends>",
+        "caller signature missing effects"
+      ]
+    },
+    "problem": {
+      "summary": "呼び出し元の効果宣言が足りず、コンパイル不可または効果契約の破綻が起きる。",
+      "common_ai_mistake": "GPT系がJavaScriptの動的型推論と混同し、呼び出し元の効果指定を省いても動く前提でコードを生成する"
+    },
+    "solution": {
+      "summary": "呼び出し元は、呼び出し先が持つ効果を満たすよう宣言する（ラッパー関数でも同様）。",
+      "code_example": "❌ AIが誤る例:\nWrapper():void =\n    SpendYen[Player, Cost]  # SpendYenが<decides><transacts>だがWrapperは無指定\n\n✅ 正しい例:\nWrapper()<transacts><decides>:void =\n    SpendYen[Player, Cost]",
+      "reference_url": "https://verselang.github.io/book/13_effects/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-001",
+      "verse-033",
+      "verse-034",
+      "verse-046"
+    ],
+    "manifest_section": "13"
+  },
+  {
+    "id": "verse-071",
+    "title": "ifのfailure contextは失敗（fails）を外へ伝播させない",
+    "category": "pattern_recommended",
+    "tags": [
+      "if expression",
+      "failure context",
+      "fails",
+      "local handling"
+    ],
+    "trigger": {
+      "description": "fails効果を「局所で握る」つもりで if を使うとき",
+      "keywords": [
+        "if",
+        "failure context",
+        "fails not propagate"
+      ],
+      "code_patterns": [
+        "if (V:= FailableExpr[]):",
+        "else: ..."
+      ]
+    },
+    "problem": {
+      "summary": "失敗を外部へ伝播するものとして扱い、ラッパー関数に過剰な効果を付けたり、逆に必要な効果を付けずコンパイル不可になる。",
+      "common_ai_mistake": "Claude系がtry-catchのスコープと混同し、Verseでifを条件分岐ではなくtryブロックとみなして失敗処理を外へ漏らすコードを生成する"
+    },
+    "solution": {
+      "summary": "失敗可能式はifのfailure contextで束縛・分岐させ、failure効果を外側に伝播させない設計にする。",
+      "code_example": "❌ AIが誤る例:\nOuter()<decides>:void =\n    # failsが伝播する前提の設計\n    V := Dangerous[]\n    ...\n\n✅ 正しい例:\nOuter():void =\n    if (V := Dangerous[]):\n        Use(V)\n    else:\n        Fallback()",
+      "reference_url": "https://verselang.github.io/book/13_effects/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [
+      "verse-017",
+      "verse-001"
+    ],
+    "manifest_section": "13"
+  },
+  {
+    "id": "verse-072",
+    "title": "spawnはsuspends効果を隠す：即時関数から非同期処理を開始できる",
+    "category": "api_gotcha",
+    "tags": [
+      "spawn",
+      "suspends",
+      "effect hiding",
+      "immediate vs async"
+    ],
+    "trigger": {
+      "description": "即時関数から非同期（suspends）処理を開始したいとき",
+      "keywords": [
+        "spawn",
+        "suspends",
+        "immediate function",
+        "effect hiding"
+      ],
+      "code_patterns": [
+        "spawn{",
+        "StartBackground()",
+        "cannot call Sleep without suspends"
+      ]
+    },
+    "problem": {
+      "summary": "spawnを使わずにsuspendsを伝播させようとして署名が不自然に膨らむ、または逆に署名を付けずコンパイル不可になる。",
+      "common_ai_mistake": "GPT系がasync/awaitの伝播ルールと混同し、Verseで即時関数からSleepを直呼びするコードを生成する"
+    },
+    "solution": {
+      "summary": "即時関数からsuspending処理は`spawn{ ... }`で開始し、呼び出し元の`<suspends>`伝播を回避する。",
+      "code_example": "❌ AIが誤る例:\nDoNow():void =\n    Sleep(1.0)  # 即時関数でsuspendsを直呼び\n\n✅ 正しい例:\nDoNow():void =\n    spawn:\n        Sleep(1.0)\n        Print(\"later\")",
+      "reference_url": "https://verselang.github.io/book/13_effects/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-014",
+      "verse-022"
+    ],
+    "manifest_section": "13"
+  },
+  {
+    "id": "verse-073",
+    "title": "suspends文脈で`?`（failure構文）を混ぜると破綻する",
+    "category": "api_gotcha",
+    "tags": [
+      "failure vs suspension",
+      "query operator",
+      "asymmetry",
+      "suspends context"
+    ],
+    "trigger": {
+      "description": "suspending関数の結果に対してfailure用の`?`構文を同じ文脈で適用しようとするとき",
+      "keywords": [
+        "suspends",
+        "?",
+        "failure",
+        "mixing"
+      ],
+      "code_patterns": [
+        "AsyncOp()? in suspends context",
+        "if (Val := AsyncOp()?):"
+      ]
+    },
+    "problem": {
+      "summary": "時間（suspension）と成功/失敗（failure）を混同し、構文・意味の両方が破綻する。",
+      "common_ai_mistake": "Claude系がasync/optionalの合成と混同し、Verseで `if (X := AsyncOp()?): ...` のように`?`を失敗処理として書くコードを生成する"
+    },
+    "solution": {
+      "summary": "suspendsとfailureは別の制御機構として扱い、failureはfailure context側で処理する（必要ならoption変換などで分離）。",
+      "code_example": "❌ AIが誤る例:\n# Suspends文脈でfailure構文を混ぜる\nPlay()<suspends>:void =\n    if (X := AsyncOp()?):\n        Use(X)\n\n✅ 正しい例:\nPlay()<suspends>:void =\n    X := AsyncOp()  # 時間待ちだけ\n    # failureは別のfailure contextで扱う\n    if (Y := MaybeFail[]):\n        Use(Y)",
+      "reference_url": "https://verselang.github.io/book/13_effects/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-034",
+      "verse-017"
+    ],
+    "manifest_section": "13"
+  },
+  {
+    "id": "verse-074",
+    "title": "`defer`はcleanup用だが、失敗/中断（suspends）を含めない",
+    "category": "api_gotcha",
+    "tags": [
+      "defer",
+      "cleanup",
+      "effects limits",
+      "synchronous",
+      "no suspends",
+      "no failure"
+    ],
+    "trigger": {
+      "description": "`defer`内で非同期処理や失敗可能処理を呼び出そうとするとき",
+      "keywords": [
+        "defer",
+        "cleanup",
+        "suspends",
+        "fails",
+        "transacts"
+      ],
+      "code_patterns": [
+        "defer:",
+        "ReleaseResource()",
+        "DoAsyncWork() in defer"
+      ]
+    },
+    "problem": {
+      "summary": "`defer`はスコープ退出時に確実に走るcleanupとして設計されているため、suspendsや失敗を含めると契約違反になる。",
+      "common_ai_mistake": "GPT系がGoのdeferと混同し、Verseで `defer: Sleep(1.0)` のように非同期や失敗処理をcleanupに入れるコードを生成する"
+    },
+    "solution": {
+      "summary": "`defer`内は同期的に成功確実なcleanupだけを書き、suspends/失敗可能処理を含めない。",
+      "code_example": "❌ AIが誤る例:\nProcess()<suspends>:void =\n    R := Acquire()\n    defer:\n        Sleep(1.0)  # defer内にsuspends\n\n✅ 正しい例:\nProcess()<suspends>:void =\n    R := Acquire()\n    defer:\n        Release(R)   # defer内は同期cleanupに限定",
+      "reference_url": "https://verselang.github.io/book/13_effects/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-052",
+      "verse-055"
+    ],
+    "manifest_section": "13"
+  },
+  {
+    "id": "verse-075",
+    "title": "decidesは「検証」と「分岐」を統合する：先にbool判定しない",
+    "category": "pattern_recommended",
+    "tags": [
+      "decides",
+      "validation",
+      "control flow",
+      "failure context"
+    ],
+    "trigger": {
+      "description": "decides付き関数を使うのに、別でboolチェックを重ねてしまうとき",
+      "keywords": [
+        "decides",
+        "validation",
+        "control flow",
+        "[] syntax"
+      ],
+      "code_patterns": [
+        "ValidateInput<Value> : <decides>",
+        "if (ValidateInput[...]):"
+      ]
+    },
+    "problem": {
+      "summary": "検証と実行の分離（先に条件だけ見て後で実行）を無理に増やし、失敗処理が二重化・矛盾しやすくなる。",
+      "common_ai_mistake": "GPT系がC#/Javaのif+throwに混同し、Verseで `if (Cond) { Risky[] } else {}` とdecidesの失敗駆動を無視したコードを生成する"
+    },
+    "solution": {
+      "summary": "decides関数をfailure contextで呼び、その成功/失敗そのものを分岐として利用する。",
+      "code_example": "❌ AIが誤る例:\nif (PlayerDataManager.GetYen(Player) >= Cost):\n    PlayerDataManager.SpendYen(Player, Cost)  # []呼び出し/失敗駆動を扱わない\n\n✅ 正しい例:\nif (PlayerDataManager.SpendYen[Player, Cost]):\n    DoSuccess()\nelse:\n    DoFailure()",
+      "reference_url": "https://verselang.github.io/book/13_effects/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [
+      "verse-001",
+      "verse-046"
+    ],
+    "manifest_section": "13"
+  },
+  {
+    "id": "verse-076",
+    "title": "Sleep等の非同期は<suspends>がない関数では使えない（Immediate vs Async）",
+    "category": "api_gotcha",
+    "tags": [
+      "concurrency",
+      "immediate",
+      "async",
+      "suspends",
+      "Sleep"
+    ],
+    "trigger": {
+      "description": "Sleep/アニメ待ち等の時間を取る処理を即時関数に書こうとするとき",
+      "keywords": [
+        "Immediate vs Async",
+        "suspends",
+        "Sleep"
+      ],
+      "code_patterns": [
+        "MyImmediateFunction()",
+        "Sleep(1.0)",
+        "ERROR: Cannot use Sleep without suspends"
+      ]
+    },
+    "problem": {
+      "summary": "時間（async）を伴う処理を即時文脈で書こうとしてコンパイル不可になる。",
+      "common_ai_mistake": "Claude系がJavaScriptのPromiseをイメージし、Verseで即時関数に `await Sleep(1)` 相当を書いても動くと思うコードを生成する"
+    },
+    "solution": {
+      "summary": "時間を伴う処理は`<suspends>`関数に切り出す（または`spawn`で開始する）。",
+      "code_example": "❌ AIが誤る例:\nDoNow():void =\n    Sleep(1.0)\n\n✅ 正しい例:\nDoNow()<suspends>:void =\n    Sleep(1.0)",
+      "reference_url": "https://verselang.github.io/book/14_concurrency/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-014"
+    ],
+    "manifest_section": "14"
+  },
+  {
+    "id": "verse-077",
+    "title": "sync/race/rush/branchは<suspends>必須（structured concurrency）",
+    "category": "api_gotcha",
+    "tags": [
+      "structured concurrency",
+      "sync",
+      "race",
+      "rush",
+      "branch",
+      "suspends effect"
+    ],
+    "trigger": {
+      "description": "structured concurrency式を即時（non-suspending）文脈で使おうとするとき",
+      "keywords": [
+        "sync",
+        "race",
+        "rush",
+        "branch",
+        "suspends"
+      ],
+      "code_patterns": [
+        "sync:",
+        "race:",
+        "rush:",
+        "branch:",
+        "cannot use in immediate functions"
+      ]
+    },
+    "problem": {
+      "summary": "structured concurrencyは時間をまたぐ制御として定義されているため、即時関数に置くとエラーになる。",
+      "common_ai_mistake": "GPT系が並行処理はただの構文糖衣と誤解し、Verseで `DoNow():void = sync: ...` のように即時関数に書くコードを生成する"
+    },
+    "solution": {
+      "summary": "`sync/race/rush/branch`は`<suspends>`が付いた関数内でのみ使う。",
+      "code_example": "❌ AIが誤る例:\nDoNow():void =\n    race:\n        Sleep(1.0)\n        Sleep(2.0)\n\n✅ 正しい例:\nDoNow()<suspends>:void =\n    race:\n        Sleep(1.0)\n        Sleep(2.0)",
+      "reference_url": "https://verselang.github.io/book/14_concurrency/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "critical",
+    "related_ids": [
+      "verse-022",
+      "verse-014"
+    ],
+    "manifest_section": "14"
+  },
+  {
+    "id": "verse-078",
+    "title": "raceは勝者のみ返し、負け側は即時キャンセル＆クリーンアップされる",
+    "category": "api_gotcha",
+    "tags": [
+      "race",
+      "cancellation",
+      "cleanup",
+      "winner-takes-all",
+      "structured concurrency"
+    ],
+    "trigger": {
+      "description": "raceでタイムアウト/フォールバックを書いているとき、負け側の副作用が消えることを理解していないとき",
+      "keywords": [
+        "race",
+        "cancellation",
+        "cleanup",
+        "timeout",
+        "fallback"
+      ],
+      "code_patterns": [
+        "Winner := race:",
+        "losers are canceled"
+      ]
+    },
+    "problem": {
+      "summary": "負け側も処理が完了する前提で状態更新を置くと、途中キャンセルで想定外の欠落が起きる。",
+      "common_ai_mistake": "GPT系がPromise.raceを誤解し、Verseで負け側にも必ず後処理が走る前提で書くコードを生成する"
+    },
+    "solution": {
+      "summary": "raceの負け側副作用はキャンセルされるため、重要な状態更新は勝者側に閉じ込める。",
+      "code_example": "❌ AIが誤る例:\nWinner := race:\n    block:\n        Sleep(1.0)\n        set Flag = true  # 想定では走ると思っている\n    block:\n        Sleep(2.0)\n        0\n\n✅ 正しい例:\nWinner := race:\n    block:\n        Sleep(1.0)\n        1  # 返り値で勝者を決める\n    block:\n        Sleep(2.0)\n        0\n\n# set Flagはrace後、勝者に応じて行う",
+      "reference_url": "https://verselang.github.io/book/14_concurrency/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [
+      "verse-052",
+      "verse-055"
+    ],
+    "manifest_section": "14"
+  },
+  {
+    "id": "verse-079",
+    "title": "rushは早く終わった側が返るが、他はキャンセルされずバックグラウンドで継続する",
+    "category": "api_gotcha",
+    "tags": [
+      "rush",
+      "background tasks",
+      "non-canceling",
+      "resource usage"
+    ],
+    "trigger": {
+      "description": "rushで先に結果が出たらメインを進めるが、負け側の継続コストを無視しているとき",
+      "keywords": [
+        "rush",
+        "non-canceling",
+        "background",
+        "cache",
+        "preload"
+      ],
+      "code_patterns": [
+        "FirstResult := rush:"
+      ]
+    },
+    "problem": {
+      "summary": "負け側が止まらない前提で設計しないと、リソース消費や副作用が意図以上に残る。",
+      "common_ai_mistake": "Claude系がraceと混同し、Verseでrushの負け側も自動キャンセルされると思うコードを生成する"
+    },
+    "solution": {
+      "summary": "rushの負け側は継続するので、バックグラウンド側は「最終的に自然終了する」か「上限付き」で設計する。",
+      "code_example": "❌ AIが誤る例:\nResult := rush:\n    block:\n        Sleep(1.0)\n        1\n    block:\n        # 終わらない系でも止まると思って進行する\n        Sleep(9999.0)\n        0\n\n✅ 正しい例:\nResult := rush:\n    block:\n        Sleep(1.0)\n        1\n    block:\n        # 上限付き/自然終了する作業だけ\n        Sleep(2.0)\n        0",
+      "reference_url": "https://verselang.github.io/book/14_concurrency/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [
+      "verse-048",
+      "verse-052"
+    ],
+    "manifest_section": "14"
+  },
+  {
+    "id": "verse-080",
+    "title": "branchはスコープ離脱で自動キャンセルされる：完遂が必要ならspawnを使う",
+    "category": "api_gotcha",
+    "tags": [
+      "branch",
+      "cancellation",
+      "scope",
+      "fire-and-forget",
+      "spawn"
+    ],
+    "trigger": {
+      "description": "branchの側で重要な完遂を期待しているとき（スコープ終了でキャンセルされることを知らない）",
+      "keywords": [
+        "branch",
+        "scope exits",
+        "cancel",
+        "spawn"
+      ],
+      "code_patterns": [
+        "branch:",
+        "doesn't outlive parent context"
+      ]
+    },
+    "problem": {
+      "summary": "branchは親スコープを離れたらキャンセルされるため、永続的/必須完遂の処理を置くと欠落する。",
+      "common_ai_mistake": "GPT系がfork/joinやタスクキューと混同し、Verseでbranch内の処理が必ず最後まで走る前提で書くコードを生成する"
+    },
+    "solution": {
+      "summary": "branchに「完遂が不要なサイドエフェクト」を置き、完遂が必要なら`spawn`を使う（ただし別管理が必要）。",
+      "code_example": "❌ AIが誤る例:\nbranch:\n    # スコープ離脱後も必ず完了する前提\n    SavePlayerProgress()\n\n✅ 正しい例:\n# 完遂必須ならspawn（ただしキャンセル/停止条件も設計）\nspawn:\n    SavePlayerProgress()",
+      "reference_url": "https://verselang.github.io/book/14_concurrency/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [
+      "verse-014",
+      "verse-052"
+    ],
+    "manifest_section": "14"
+  },
+  {
+    "id": "verse-081",
+    "title": "spawnは非構造化：スコープ外でも走る（task(t)返却・要注意）",
+    "category": "api_gotcha",
+    "tags": [
+      "spawn",
+      "unstructured concurrency",
+      "task(t)",
+      "independent lifetime",
+      "cleanup"
+    ],
+    "trigger": {
+      "description": "spawnで開始した処理の寿命・後片付けを設計せずに使うとき",
+      "keywords": [
+        "spawn",
+        "task(t)",
+        "independent",
+        "no automatic cleanup"
+      ],
+      "code_patterns": [
+        "BackgroundTask:task(int) = spawn{...}",
+        "spawn{...}"
+      ]
+    },
+    "problem": {
+      "summary": "spawnは親スコープの管理外で動くため、停止条件やクリーンアップ漏れが起きやすい。",
+      "common_ai_mistake": "Claude系が自動キャンセル付きのstructured concurrencyだと誤解し、Verseでspawnを多用してゴースト処理を放置するコードを生成する"
+    },
+    "solution": {
+      "summary": "spawnは「必要なときだけ」。停止条件/破棄/重複起動防止を別途設計し、不要な累積を防ぐ。",
+      "code_example": "❌ AIが誤る例:\n# 重複起動防止なしでspawnを乱立\nspawn{LongRunningTask()}\nspawn{LongRunningTask()}\n\n✅ 正しい例:\n# プレイヤー単位で起動済みをガードし、停止フラグも管理\nif (set Started[Player] = true) {}\nspawn{LongRunningTask(Player)}\n\n# PlayerRemoved等でStarted[Player]=falseしループを抜ける",
+      "reference_url": "https://verselang.github.io/book/14_concurrency/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [
+      "verse-047",
+      "verse-052",
+      "verse-055"
+    ],
+    "manifest_section": "14"
+  },
+  {
+    "id": "verse-082",
+    "title": "var宣言では型注釈必須（`var X :=`は不可）",
+    "category": "language_constraint",
+    "tags": [
+      "var",
+      "mutability",
+      "type annotation"
+    ],
+    "trigger": {
+      "description": "var変数を`:=`で初期化しようとしてコンパイルエラーになるとき",
+      "keywords": [
+        "var",
+        ":",
+        "type annotation",
+        ":="
+      ],
+      "code_patterns": [
+        "var X := 0"
+      ]
+    },
+    "problem": {
+      "summary": "Verseでは`var X := ...`の型推論初期化が許されず、構文/型規則に反してビルドが通らない。",
+      "common_ai_mistake": "GPT系がTypeScriptの変数宣言の型推論と混同し、`var X := 0`のようなコードを生成する"
+    },
+    "solution": {
+      "summary": "`var`は宣言時に型注釈を付け、`var X:int = 0`の形にする（新規変数の型推論は`:=`を使う）。",
+      "code_example": "# 誤り\nvar X := 0\n\n# 正しい\nvar X:int = 0",
+      "reference_url": "https://verselang.github.io/book/05_mutability/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "critical",
+    "related_ids": [],
+    "manifest_section": "5"
+  },
+  {
+    "id": "verse-083",
+    "title": "var/setはエフェクト要求でコンパイル失敗しやすい",
+    "category": "language_constraint",
+    "tags": [
+      "var",
+      "set",
+      "effects",
+      "transacts"
+    ],
+    "trigger": {
+      "description": "`set`を呼ぶ関数側のエフェクト指定が足りずビルドが失敗するとき",
+      "keywords": [
+        "set",
+        "transacts",
+        "reads",
+        "writes",
+        "effects"
+      ],
+      "code_patterns": [
+        "set X = 1",
+        "MyFn():void = set X = 1"
+      ]
+    },
+    "problem": {
+      "summary": "mutate/observeに必要なエフェクトが関数シグネチャに宣言されておらず、`set`/var参照が型検査で弾かれる。",
+      "common_ai_mistake": "GPT系がC#のvoidメソッドの感覚でエフェクト指定なしに`set`を生成し、コンパイル不可なコードを生成する"
+    },
+    "solution": {
+      "summary": "mutate/observeに必要なエフェクト（例:`<transacts>`等）を関数に付与してから`set`を行う。",
+      "code_example": "# 誤り\nMyFn():void =\n    set X = 1\n\n# 正しい（例）\nMyFn<transacts>():void =\n    set X = 1",
+      "reference_url": "https://verselang.github.io/book/05_mutability/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "critical",
+    "related_ids": [],
+    "manifest_section": "5"
+  },
+  {
+    "id": "verse-084",
+    "title": "配列の`[]`アクセスは失敗可能（範囲外は必ずif束縛で吸収）",
+    "category": "api_gotcha",
+    "tags": [
+      "array",
+      "failable",
+      "indexing",
+      "if"
+    ],
+    "trigger": {
+      "description": "配列インデックスが範囲外になり得るのに、`Arr[i]`の失敗可能性を無視して後続処理へ流し込むとき",
+      "keywords": [
+        "array",
+        "[]",
+        "failable",
+        "out of bounds",
+        "if (x := ...)"
+      ],
+      "code_patterns": [
+        "Arr[i]",
+        "Elem := Arr[i]"
+      ]
+    },
+    "problem": {
+      "summary": "`Arr[i]`は失敗可能式のため、非失敗文脈で扱うとコンパイルエラー、または想定外の制御フローになる。",
+      "common_ai_mistake": "GPT系がPythonのlist添字を例外なし取得と混同し、`Elem := Arr[i]`をそのまま使うコードを生成する"
+    },
+    "solution": {
+      "summary": "`if (Elem := Arr[i]):`のように失敗可能性を条件節で束縛してから使う。",
+      "code_example": "# 誤り\nElem := Arr[i]\n\n# 正しい\nif (Elem := Arr[i]):\n    Use(Elem)",
+      "reference_url": "https://verselang.github.io/book/03_containers/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "critical",
+    "related_ids": [],
+    "manifest_section": "3"
+  },
+  {
+    "id": "verse-085",
+    "title": "map参照も失敗可能：`M[key]`を直接値として扱わない",
+    "category": "api_gotcha",
+    "tags": [
+      "map",
+      "failable",
+      "lookup",
+      "weak_map"
+    ],
+    "trigger": {
+      "description": "mapのキーが存在する前提で`Scores[Key]`を直接取り出してしまい、失敗可能性を落とすとき",
+      "keywords": [
+        "map",
+        "lookup",
+        "failable",
+        "if (x := M[key])"
+      ],
+      "code_patterns": [
+        "Scores[Name]",
+        "Score := Scores[Key]"
+      ]
+    },
+    "problem": {
+      "summary": "mapの`M[key]`は失敗可能式。キー不在時に失敗するため、非失敗文脈でそのまま扱うと破綻（またはコンパイルエラー）する。",
+      "common_ai_mistake": "GPT系がJavaScriptの`Map.get()`を`undefined`返しと混同し、`Score := Scores[Key]`をそのまま使うコードを生成する"
+    },
+    "solution": {
+      "summary": "`if (Score := Scores[Key]):`で束縛してから使う（または`?`/option連携で明示する）。",
+      "code_example": "# 誤り\nScore := Scores[Key]\n\n# 正しい\nif (Score := Scores[Key]):\n    Use(Score)",
+      "reference_url": "https://verselang.github.io/book/03_containers/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "critical",
+    "related_ids": [],
+    "manifest_section": "3"
+  },
+  {
+    "id": "verse-086",
+    "title": "if条件は失敗可能式が必須（失敗時はelseへ/条件の副作用はロールバック）",
+    "category": "language_constraint",
+    "tags": [
+      "if",
+      "failure",
+      "failable",
+      "rollback"
+    ],
+    "trigger": {
+      "description": "if条件が“失敗しない”式だけになっていてコンパイルが通らない／副作用の反映を誤解しているとき",
+      "keywords": [
+        "if",
+        "failable",
+        "success",
+        "failure",
+        "speculative execution"
+      ],
+      "code_patterns": [
+        "if (IsReady):",
+        "if (Condition):"
+      ]
+    },
+    "problem": {
+      "summary": "ifの条件は“少なくとも1つは失敗し得る式”を含む必要があり、条件評価の副作用は失敗時にロールバックされる。",
+      "common_ai_mistake": "GPT系がC#のbool条件と混同し、`if (flag):`のように失敗可能性なしの条件を生成する"
+    },
+    "solution": {
+      "summary": "logic判定はクエリ演算子（例:`IsReady?`）や、失敗可能な関数/添字を条件へ入れる。副作用は条件の直後で整理する。",
+      "code_example": "# 誤り\nif (IsReady):\n    Do()\n\n# 正しい\nif (IsReady?):\n    Do()",
+      "reference_url": "https://verselang.github.io/book/07_control/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "critical",
+    "related_ids": [],
+    "manifest_section": "7"
+  },
+  {
+    "id": "verse-087",
+    "title": "enum`case`の網羅性：closedは全分岐/Openは`_`または`<decides>`必須",
+    "category": "pattern_recommended",
+    "tags": [
+      "enum",
+      "case",
+      "exhaustiveness",
+      "open",
+      "closed"
+    ],
+    "trigger": {
+      "description": "enumの`case`でワイルドカード/decidesを欠いたまま、将来の値追加に備えずに実装してしまうとき",
+      "keywords": [
+        "case",
+        "enum",
+        "open",
+        "closed",
+        "wildcard",
+        "<decides>"
+      ],
+      "code_patterns": [
+        "case (E):",
+        "_ =>",
+        "<decides>"
+      ]
+    },
+    "problem": {
+      "summary": "closed/openで必要な網羅性が違う。特にopen enumは“将来の値”を考慮しないとコンパイルエラーになる。",
+      "common_ai_mistake": "GPT系がJavaのswitchを網羅性固定と混同し、open enumでも`_`なしのcaseを生成する"
+    },
+    "solution": {
+      "summary": "closed enumは全分岐を、open enumは`_`または`<decides>`コンテキストを付ける。",
+      "code_example": "# 誤り（open enumで`_`や<decides>がない）\ncase (W):\n    weapon.Sword => 1\n    weapon.Bow => 2\n\n# 正しい\ncase (W):\n    weapon.Sword => 1\n    weapon.Bow => 2\n    _ => 0",
+      "reference_url": "https://verselang.github.io/book/07_control/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [],
+    "manifest_section": "7"
+  },
+  {
+    "id": "verse-088",
+    "title": "persistable classの制約（final/persistable/var禁止/継承禁止）",
+    "category": "language_constraint",
+    "tags": [
+      "persistable",
+      "weak_map",
+      "class",
+      "final",
+      "var禁止"
+    ],
+    "trigger": {
+      "description": "persistable classを作る際に、`var`フィールドや継承/非許容要素を入れてコンパイルエラーになるとき",
+      "keywords": [
+        "persistable",
+        "class<final><persistable>",
+        "var",
+        "no subclasses",
+        "weak_map"
+      ],
+      "code_patterns": [
+        "class<persistable>",
+        "var XP:int = 0"
+      ]
+    },
+    "problem": {
+      "summary": "persistableにできるclassは強い構造制約がある。非許容フィールド/継承/可変メンバを含むとビルドが通らない。",
+      "common_ai_mistake": "GPT系がC#のSerializableクラスと混同し、`class<...>:`に`var`や継承を入れたコードを生成する"
+    },
+    "solution": {
+      "summary": "`class<final><persistable>`にし、`var`フィールドや継承/サブクラス化/禁止要素を避ける。必要ならpersistable structを使う。",
+      "code_example": "# 誤り（varフィールド等）\nplayer_profile_data := class<persistable>:\n    var XP:int = 0\n\n# 正しい（例）\nplayer_profile_data := class<final><persistable>:\n    XP:int = 0",
+      "reference_url": "https://verselang.github.io/book/17_persistable/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "critical",
+    "related_ids": [],
+    "manifest_section": "17"
+  },
+  {
+    "id": "verse-089",
+    "title": "`weak_map(player, t)`は自動ロード前提：初期化は存在チェック必須",
+    "category": "pattern_recommended",
+    "tags": [
+      "persistable",
+      "weak_map",
+      "initialization",
+      "guard"
+    ],
+    "trigger": {
+      "description": "persistableデータを毎回初期化してしまい、既存セーブを上書きする事故が起きるとき",
+      "keywords": [
+        "weak_map(player",
+        "if (not Map[Player])",
+        "set Map[Player]",
+        "persisted"
+      ],
+      "code_patterns": [
+        "set PlayerData[Player] = default",
+        "PlayerData[Player] = ..."
+      ]
+    },
+    "problem": {
+      "summary": "`weak_map(player, t)`は自動でロードされる。ロード済みなのに初期化ガードなしで上書きすると進捗が消える。",
+      "common_ai_mistake": "GPT系がUnityのStart()実行と混同し、常に初期値を`set`して上書きするコードを生成する"
+    },
+    "solution": {
+      "summary": "必ず`not MySavedPlayerData[Player]`等で存在確認し、なければ作成する。",
+      "code_example": "if (not PlayerData[Player]):\n    if (set PlayerData[Player] = player_stats{}) {}\n\n# 既存があるなら触らない",
+      "reference_url": "https://verselang.github.io/book/17_persistable/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [],
+    "manifest_section": "17"
+  },
+  {
+    "id": "verse-090",
+    "title": "persistableスキーマ変更は互換性破壊になる（フィールド追加/デフォルト設計へ寄せる）",
+    "category": "pattern_antipattern",
+    "tags": [
+      "schema evolution",
+      "persistable",
+      "compatibility",
+      "defaults"
+    ],
+    "trigger": {
+      "description": "アップデートでpersistable struct/enumのフィールドを削除・型変更し、既存セーブが壊れるとき",
+      "keywords": [
+        "persistable struct",
+        "enum",
+        "versioning",
+        "backward compatibility",
+        "field change"
+      ],
+      "code_patterns": [
+        "NewField removal",
+        "Type changed",
+        "Rename field"
+      ]
+    },
+    "problem": {
+      "summary": "persistableは“永続される契約”。スキーマを不互換に変えると、読み込み時の互換性が崩れる。",
+      "common_ai_mistake": "GPT系がSQLマイグレーションと混同し、persistableの既存フィールドを削除/型変更するコードを生成する"
+    },
+    "solution": {
+      "summary": "互換性維持のため、既存フィールドは消さず、追加はデフォルト付きで行い、必要なら`SchemaVersion`で分岐する。",
+      "code_example": "# 反例（互換性を壊しやすい）\n# 既存フィールド削除/型変更\n\n# 推奨\nplayer_stats := struct<persistable>:\n    SchemaVersion:int = 1\n    NewField:int = 0\n\n# 既存はそのまま",
+      "reference_url": "https://verselang.github.io/book/18_evolution/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [],
+    "manifest_section": "18"
+  },
+  {
+    "id": "verse-091",
+    "title": "public指定は“永続の約束”：publicメンバーの後方互換を最優先に設計する",
+    "category": "workflow_tip",
+    "tags": [
+      "public",
+      "compatibility",
+      "metaverse-first",
+      "contract"
+    ],
+    "trigger": {
+      "description": "アップデートでpublicメンバーを削除/意味変更し、外部利用者や他モジュールが壊れるとき",
+      "keywords": [
+        "public specifier",
+        "contract",
+        "stability",
+        "backward compatibility",
+        "remove"
+      ],
+      "code_patterns": [
+        "<public> removed",
+        "public API changed"
+      ]
+    },
+    "problem": {
+      "summary": "publicは“外部の依存”を作る。削除/非互換変更は“約束違反”になり得るため、進化戦略が必須。",
+      "common_ai_mistake": "GPT系がNPMのセマンティックバージョニングと混同し、public APIを気軽に削除/変更するコードを生成する"
+    },
+    "solution": {
+      "summary": "publicは維持・非推奨化・デフォルト値追加・バージョニングで段階移行する。必要なら新規APIを増やして既存は保持する。",
+      "code_example": "# 推奨イメージ\n# 既存publicは残す\nOldPublic<public>():int = ...\n\n# 新APIを追加して移行\nNewPublic<public>():int = ...",
+      "reference_url": "https://verselang.github.io/book/18_evolution/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [],
+    "manifest_section": "18"
+  },
+  {
+    "id": "verse-092",
+    "title": "named/default parametersは`?Name:=Value`が必須＆デフォルトは定義スコープ評価",
+    "category": "language_constraint",
+    "tags": [
+      "named parameters",
+      "default parameters",
+      "call syntax",
+      "subtype"
+    ],
+    "trigger": {
+      "description": "named引数の書き方ミスや、デフォルト値の評価スコープ誤解で意図しない値になるとき",
+      "keywords": [
+        "named",
+        "default",
+        "?Name:=Value",
+        "defining scope"
+      ],
+      "code_patterns": [
+        "Func(Amount:=5)",
+        "Func(?Amount:=5)"
+      ]
+    },
+    "problem": {
+      "summary": "named/defaultパラメータは呼び出し側の構文が厳密。さらにデフォルト値は“定義スコープ”で評価される。",
+      "common_ai_mistake": "GPT系がPythonのキーワード引数と混同し、`Func(Amount:=5)`のような呼び出しを生成する"
+    },
+    "solution": {
+      "summary": "named引数は必ず`?Name:=Value`で渡し、デフォルト値が評価されるスコープ前提でコードを組む。",
+      "code_example": "# 誤り\n# Func(Amount:=5)\n\n# 正しい\nFunc(?Amount:=5)",
+      "reference_url": "https://verselang.github.io/book/06_functions/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [],
+    "manifest_section": "6"
+  },
+  {
+    "id": "verse-093",
+    "title": "function typeはnamed parameter名を保持：型に合わせて名前も揃える",
+    "category": "api_gotcha",
+    "tags": [
+      "function types",
+      "named parameters",
+      "type compatibility"
+    ],
+    "trigger": {
+      "description": "関数型を`type{_(?Amount:..., ?Rate:...):...}`で扱うとき、named引数名の不一致で型適合が崩れるとき",
+      "keywords": [
+        "function type",
+        "preserve named",
+        "type{_",
+        "?Amount",
+        "?Rate"
+      ],
+      "code_patterns": [
+        "type{_(?Amount:float, ?Rate:float):float}",
+        "type{_():int}"
+      ]
+    },
+    "problem": {
+      "summary": "Verseの関数型はnamedパラメータ名を保持するため、見た目が同じ型でも名前がズレると合致しない。",
+      "common_ai_mistake": "GPT系がTypeScriptのシグネチャ互換（位置引数中心）と混同し、named名を無視して型適合させようとするコードを生成する"
+    },
+    "solution": {
+      "summary": "必要なnamedパラメータ名が型側で保持されることを前提に、型宣言と呼び出し/束縛の双方で名前を揃える。",
+      "code_example": "# 例：型側に?Amount/?Rateがあるなら、対応する関数を選ぶ\nT:type{_(?Amount:float, ?Rate:float):float} = Calculate",
+      "reference_url": "https://verselang.github.io/book/06_functions/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [],
+    "manifest_section": "6"
+  },
+  {
+    "id": "verse-094",
+    "title": "Verseはステートメントなし：すべてが式（値を返す前提）",
+    "category": "language_constraint",
+    "tags": [
+      "expressions",
+      "no statements",
+      "value",
+      "composition"
+    ],
+    "trigger": {
+      "description": "式で値が必要な文脈に対して、C#等の“文”として組み立てようとして破綻するとき",
+      "keywords": [
+        "expression",
+        "value",
+        "no statements"
+      ],
+      "code_patterns": [
+        "if (Cond) { ... }",
+        "statement style"
+      ]
+    },
+    "problem": {
+      "summary": "Verseは“すべてが式”。式で構成するモデルを前提にしないと、値の流れ（代入先/戻り値）を設計できずコンパイルエラーやロジック破綻になる。",
+      "common_ai_mistake": "GPT系がC#のstatement/expression分離と混同し、文として書く前提のコードを生成する"
+    },
+    "solution": {
+      "summary": "コードを“値を生む式”として組み立て、必要な箇所は`:=`や引数に束縛して値の流れを作る。",
+      "code_example": "Result := if (Condition?) then \"yes\" else \"no\"",
+      "reference_url": "https://verselang.github.io/book/00_overview/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "critical",
+    "related_ids": [],
+    "manifest_section": "0"
+  },
+  {
+    "id": "verse-095",
+    "title": "メタバース中心設計：effect追跡が共有実行を安全にする",
+    "category": "workflow_tip",
+    "tags": [
+      "metaverse-first",
+      "effects",
+      "sandboxing",
+      "compatibility"
+    ],
+    "trigger": {
+      "description": "共有環境で安全に動かすための言語設計（effect追跡）を理解せず、API利用の副作用境界を誤るとき",
+      "keywords": [
+        "metaverse-first",
+        "effects",
+        "sandboxing",
+        "side effects"
+      ],
+      "code_patterns": [
+        "<computes>",
+        "<transacts>"
+      ]
+    },
+    "problem": {
+      "summary": "Verseは共有実行/永続互換を前提に、エフェクトを型シグネチャへ反映して安全性を上げる。ここを無視すると誤実装しやすい。",
+      "common_ai_mistake": "GPT系がJavaScriptの副作用自由な感覚と混同し、エフェクト境界を明示せずにコードを生成する"
+    },
+    "solution": {
+      "summary": "effect specifierを“副作用契約”として扱い、呼び出し元/関数側の期待を合わせる。",
+      "code_example": "PureCompute()<computes>:int = 2 + 2",
+      "reference_url": "https://verselang.github.io/book/00_overview/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "info",
+    "related_ids": [],
+    "manifest_section": "0"
+  },
+  {
+    "id": "verse-096",
+    "title": "式の基本モデル：primary expressionから構文が組み立つ",
+    "category": "workflow_tip",
+    "tags": [
+      "primary expressions",
+      "literals",
+      "tuple"
+    ],
+    "trigger": {
+      "description": "Verseの式ツリー（primaryから複合式へ）を意識せず、括弧/構文の解釈を誤るとき",
+      "keywords": [
+        "primary expression",
+        "literal",
+        "identifier",
+        "tuple"
+      ],
+      "code_patterns": [
+        "Identifier",
+        "Literal",
+        "( ... )",
+        "Tuple"
+      ]
+    },
+    "problem": {
+      "summary": "Verseの構文は“式を組む”前提。式としての原子（primary）を理解せずに設計すると、意図とコンパイラ解釈がズレる。",
+      "common_ai_mistake": "GPT系がPythonのステートメント中心構文と混同し、括弧/構文の意味を取り違えた式を生成する"
+    },
+    "solution": {
+      "summary": "まずprimary（literal/identifier/parenthesized/tuple）を把握し、必要なら束縛（`:=`）して値の流れを作る。",
+      "code_example": "X := 42\nPair := (1, 2)",
+      "reference_url": "https://verselang.github.io/book/01_expressions/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "info",
+    "related_ids": [],
+    "manifest_section": "1"
+  },
+  {
+    "id": "verse-097",
+    "title": "タプルは軽量集約：クラスの代わりに値の束として扱う",
+    "category": "pattern_recommended",
+    "tags": [
+      "tuple",
+      "data aggregation",
+      "value types"
+    ],
+    "trigger": {
+      "description": "複数値をまとめるだけなのに、過剰にクラス/structを作って可用性を下げるとき",
+      "keywords": [
+        "tuple",
+        "aggregate",
+        "lightweight"
+      ],
+      "code_patterns": [
+        "(a, b)",
+        "tuple"
+      ]
+    },
+    "problem": {
+      "summary": "タプルは軽量な集約。ここを無視してクラスを乱用すると、必要以上の型/設計コストがかかる。",
+      "common_ai_mistake": "GPT系がC#のDTO設計と混同し、タプル用途でクラスを量産するコードを生成する"
+    },
+    "solution": {
+      "summary": "「一時的な複数値の束」はタプルで表現し、必要な場面だけstruct等へ昇格させる。",
+      "code_example": "Pair := (10, 20)\nA := Pair(0)",
+      "reference_url": "https://verselang.github.io/book/01_expressions/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "info",
+    "related_ids": [],
+    "manifest_section": "1"
+  },
+  {
+    "id": "verse-098",
+    "title": "floatリテラルは小数点必須：`1`はintでfloat代入に失敗しやすい",
+    "category": "language_constraint",
+    "tags": [
+      "float",
+      "literal",
+      "syntax"
+    ],
+    "trigger": {
+      "description": "float代入に`1`のような整数リテラルを使って型不一致/解釈違いを起こすとき",
+      "keywords": [
+        "float",
+        "literal",
+        "decimal point"
+      ],
+      "code_patterns": [
+        ":float = 1",
+        "1.0"
+      ]
+    },
+    "problem": {
+      "summary": "floatはfloatリテラルとして構文要件を満たす必要がある。`1`はintとして扱われ、意図とズレる。",
+      "common_ai_mistake": "GPT系がC#の暗黙数値変換と混同し、`float x = 1`相当を生成する"
+    },
+    "solution": {
+      "summary": "floatには小数点つきリテラル（例:`1.0`）を使う。",
+      "code_example": "# 誤り\nX:float = 1\n\n# 正しい\nX:float = 1.0",
+      "reference_url": "https://verselang.github.io/book/02_primitives/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "critical",
+    "related_ids": [],
+    "manifest_section": "2"
+  },
+  {
+    "id": "verse-099",
+    "title": "整数リテラルは64-bit範囲制約：巨大値は設計/用途を見直す",
+    "category": "api_gotcha",
+    "tags": [
+      "int literal",
+      "range",
+      "64-bit",
+      "runtime"
+    ],
+    "trigger": {
+      "description": "巨大なintリテラルを使ってコンパイル/補間/永続で想定外になるとき",
+      "keywords": [
+        "int",
+        "64-bit",
+        "literal range",
+        "interpolation",
+        "persist"
+      ],
+      "code_patterns": [
+        "9223372036854775807+",
+        "very large literal"
+      ]
+    },
+    "problem": {
+      "summary": "整数リテラルには64-bit範囲の書けなさ/制約がある。ランタイムの任意精度と、リテラル制約や利用先制約は別扱いになり得る。",
+      "common_ai_mistake": "GPT系がBigIntを前提に暗黙的に巨大リテラルが通ると混同し、過大なintリテラルを生成する"
+    },
+    "solution": {
+      "summary": "巨大値は型/用途（補間/永続）を確認し、必要なら別表現（float/分割/スキーマ設計）へ寄せる。",
+      "code_example": "# 注意点：整数リテラルの許容範囲と、補間/永続での制約を分けて考える",
+      "reference_url": "https://verselang.github.io/book/02_primitives/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [],
+    "manifest_section": "2"
+  },
+  {
+    "id": "verse-100",
+    "title": "クエリ`?`はlogic判定：`if (x?)`と`?`を混同しない",
+    "category": "api_gotcha",
+    "tags": [
+      "query operator",
+      "logic",
+      "if",
+      "failure"
+    ],
+    "trigger": {
+      "description": "logic値の扱いを誤り、失敗可能式の形にできていないとき",
+      "keywords": [
+        "?",
+        "logic",
+        "query operator",
+        "if (x?)"
+      ],
+      "code_patterns": [
+        "if (IsReady?)",
+        "if (IsReady)"
+      ]
+    },
+    "problem": {
+      "summary": "Verseのlogicはクエリ演算子`?`を介して成功/失敗に変換される。`if (IsReady)`のような“bool感覚”はズレる。",
+      "common_ai_mistake": "GPT系がJavaのbooleanをそのままifに入れられると混同し、`if (IsReady)`のようなコードを生成する"
+    },
+    "solution": {
+      "summary": "logic判定は`if (IsReady?)`の形にする。",
+      "code_example": "if (IsReady?):\n    Do()",
+      "reference_url": "https://verselang.github.io/book/04_operators/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [],
+    "manifest_section": "4"
+  },
+  {
+    "id": "verse-101",
+    "title": "`=`は比較、代入は`set X = ...`：混同すると別物になる",
+    "category": "language_constraint",
+    "tags": [
+      "=",
+      "set",
+      "assignment",
+      "equality",
+      "precedence"
+    ],
+    "trigger": {
+      "description": "等価比較と代入を混ぜ、意図しない条件分岐や型エラーを起こすとき",
+      "keywords": [
+        "=",
+        "set",
+        "equality",
+        "assignment"
+      ],
+      "code_patterns": [
+        "X = 10",
+        "set X = 10"
+      ]
+    },
+    "problem": {
+      "summary": "`=`は条件式中では比較になり、代入は`set`を伴う。これを混同するとロジックが壊れる（またはコンパイルエラー）。",
+      "common_ai_mistake": "GPT系がC言語の代入演算子と混同し、`X = 10`を代入として扱うコードを生成する"
+    },
+    "solution": {
+      "summary": "代入は必ず`set X = Value`、比較は`X = Y`（または`<>`）として使い分ける。",
+      "code_example": "# 誤り\nX = 10\n\n# 正しい\nset X = 10\n# 比較なら\nif (X = 10):\n    Do()",
+      "reference_url": "https://verselang.github.io/book/04_operators/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "critical",
+    "related_ids": [],
+    "manifest_section": "4"
+  },
+  {
+    "id": "verse-102",
+    "title": "structは値セマンティクス：代入はコピー（参照更新を期待しない）",
+    "category": "api_gotcha",
+    "tags": [
+      "struct",
+      "value semantics",
+      "copy"
+    ],
+    "trigger": {
+      "description": "struct代入後に片方だけ更新されるはずが、別インスタンス扱いになっていない/逆を期待しているとき",
+      "keywords": [
+        "struct",
+        "copy",
+        "assignment",
+        "value type"
+      ],
+      "code_patterns": [
+        "NewPos := PlayerPos",
+        "set StructField = ..."
+      ]
+    },
+    "problem": {
+      "summary": "structは値型。代入でコピーが発生するため、参照型の感覚で“同じ実体を更新”できると誤解するとバグる。",
+      "common_ai_mistake": "GPT系がC#のclass参照と混同し、struct代入を参照共有だと誤って扱うコードを生成する"
+    },
+    "solution": {
+      "summary": "structはコピーとして捉え、必要ならクラス（参照セマンティクス）を選ぶか、更新点を明示する。",
+      "code_example": "NewPos := PlayerPos  # コピー\n# NewPos側だけ別値になる前提で設計する",
+      "reference_url": "https://verselang.github.io/book/09_structs_enums/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [],
+    "manifest_section": "9"
+  },
+  {
+    "id": "verse-103",
+    "title": "open/closed enumで`case`の網羅性が変わる（未来の値を考慮）",
+    "category": "pattern_recommended",
+    "tags": [
+      "enum",
+      "open",
+      "closed",
+      "exhaustiveness",
+      "case"
+    ],
+    "trigger": {
+      "description": "open enumを将来拡張するのに、wildcard/decidesを入れずに網羅性を満たさないとき",
+      "keywords": [
+        "enum<open>",
+        "case",
+        "wildcard",
+        "<decides>",
+        "exhaustive"
+      ],
+      "code_patterns": [
+        "_ =>",
+        "<decides>",
+        "open enum"
+      ]
+    },
+    "problem": {
+      "summary": "closedは全分岐でコンパイラが検証できるが、openは将来値があり得るため条件/ワイルドカード/decidesが必要になる。",
+      "common_ai_mistake": "GPT系が固定enumのswitchと混同し、open enumに`_`や<decides>なしでcaseを生成する"
+    },
+    "solution": {
+      "summary": "closedは全分岐、openは`_`または`<decides>`で“未知値”を扱う。",
+      "code_example": "case (W):\n    weapon.Sword => 1\n    weapon.Bow => 2\n    _ => 0",
+      "reference_url": "https://verselang.github.io/book/09_structs_enums/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "critical",
+    "related_ids": [],
+    "manifest_section": "9"
+  },
+  {
+    "id": "verse-104",
+    "title": "class定義はmoduleスコープのみ：ネスト定義は不可",
+    "category": "language_constraint",
+    "tags": [
+      "class",
+      "module scope",
+      "definition location"
+    ],
+    "trigger": {
+      "description": "関数/別クラス/structなどの中でclassを定義しようとしてコンパイルエラーになるとき",
+      "keywords": [
+        "class",
+        "module",
+        "cannot define inside"
+      ],
+      "code_patterns": [
+        "MyFn():void = MyClass := class: ...",
+        "class inside function"
+      ]
+    },
+    "problem": {
+      "summary": "Verseのclassはトップレベル型定義として扱われ、ネスト定義できない。",
+      "common_ai_mistake": "GPT系がC++/Javaのローカルクラスを前提にし、関数内class定義を生成する"
+    },
+    "solution": {
+      "summary": "class定義はmoduleスコープ（ファイル/フォルダの外側）に置く。",
+      "code_example": "my_type := class:\n    var Health:int = 100",
+      "reference_url": "https://verselang.github.io/book/10_classes_interfaces/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "critical",
+    "related_ids": [],
+    "manifest_section": "10"
+  },
+  {
+    "id": "verse-105",
+    "title": "非abstract classのメソッドは実装必須（interfaceと対比して理解する）",
+    "category": "language_constraint",
+    "tags": [
+      "methods",
+      "implementation",
+      "interface",
+      "abstract"
+    ],
+    "trigger": {
+      "description": "非abstractクラスのメソッドを実装なしで宣言し、コンパイルエラーになるとき",
+      "keywords": [
+        "methods",
+        "implementation",
+        "abstract",
+        "interface"
+      ],
+      "code_patterns": [
+        "MyMethod():void",
+        "no implementation"
+      ]
+    },
+    "problem": {
+      "summary": "interfaceは抽象メソッドを宣言できるが、非abstract classのメソッドは実装が必要。",
+      "common_ai_mistake": "GPT系がC#のabstractメソッド/インターフェイス規則を混同し、非abstract classに未実装メソッドを生成する"
+    },
+    "solution": {
+      "summary": "実装が必要ならクラス内で必ず定義し、抽象化したいならinterface側で宣言する。",
+      "code_example": "# interfaceなら宣言のみが許される\nmy_i := interface:\n    Do():void\n\n# classは実装が必要\nmy_c := class:\n    Do():void = {}",
+      "reference_url": "https://verselang.github.io/book/10_classes_interfaces/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "critical",
+    "related_ids": [],
+    "manifest_section": "10"
+  },
+  {
+    "id": "verse-106",
+    "title": "型階層の基本：any/falseとサブタイプ関係（int<:rationalなど）",
+    "category": "language_constraint",
+    "tags": [
+      "types",
+      "subtyping",
+      "any",
+      "false",
+      "rational"
+    ],
+    "trigger": {
+      "description": "サブタイプを誤解して型適合が崩れるとき（例:intとrationalの方向）",
+      "keywords": [
+        "subtyping",
+        "any",
+        "false",
+        "int",
+        "rational"
+      ],
+      "code_patterns": [
+        "GetRat(MyInt)",
+        "GetInt(MyRat)"
+      ]
+    },
+    "problem": {
+      "summary": "サブタイプは“どちらがどちらを受け取れるか”の方向性が重要。int/rationalの関係を逆に扱うと型エラーになる。",
+      "common_ai_mistake": "GPT系が数値型の暗黙変換を前提にし、intとrationalのサブタイプ方向を逆に扱うコードを生成する"
+    },
+    "solution": {
+      "summary": "intはrationalのサブタイプ。受け側の期待型（関数シグネチャ）に合わせて変換/設計する。",
+      "code_example": "GetRat(MyInt)  # OK\nGetInt(MyRat)  # エラー（例）",
+      "reference_url": "https://verselang.github.io/book/11_types/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [],
+    "manifest_section": "11"
+  },
+  {
+    "id": "verse-107",
+    "title": "mapのサブタイプはキー逆変/値共変（`[K]V`で破綻しやすい）",
+    "category": "api_gotcha",
+    "tags": [
+      "map",
+      "subtyping",
+      "variance",
+      "contravariant",
+      "covariant"
+    ],
+    "trigger": {
+      "description": "map型を上位/下位として扱うときに、キー/値の分散（逆変/共変）を誤って型エラーになるとき",
+      "keywords": [
+        "map type",
+        "contravariant",
+        "covariant",
+        "variance"
+      ],
+      "code_patterns": [
+        "[K1]V1 subtype [K2]V2"
+      ]
+    },
+    "problem": {
+      "summary": "mapはキーが逆変、値が共変。ここを無視した“直感的な置き換え”が型不整合の原因になる。",
+      "common_ai_mistake": "GPT系がジェネリクスの分散則を省略して扱い、キー/値の分散を逆にした型を生成する"
+    },
+    "solution": {
+      "summary": "mapの型変換は「キーが逆変」「値が共変」を前提に判断する。",
+      "code_example": "mapのサブタイプ条件：K側は逆変、V側は共変",
+      "reference_url": "https://verselang.github.io/book/11_types/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [],
+    "manifest_section": "11"
+  },
+  {
+    "id": "verse-108",
+    "title": "publicは契約：削除や互換破壊が“長期依存”を壊す",
+    "category": "workflow_tip",
+    "tags": [
+      "public",
+      "compatibility",
+      "contract",
+      "metaverse-first"
+    ],
+    "trigger": {
+      "description": "publicメンバーを更新で消したり意味を変えて、外部依存が壊れるとき",
+      "keywords": [
+        "public",
+        "contract",
+        "stability",
+        "compatibility"
+      ],
+      "code_patterns": [
+        "<public> removed",
+        "<public> changed"
+      ]
+    },
+    "problem": {
+      "summary": "publicは外部への可用性/安定性の約束。metaverse前提だと影響が長く続く。",
+      "common_ai_mistake": "GPT系が内部実装の変更と混同し、public APIを気軽に削除/変更するコードを生成する"
+    },
+    "solution": {
+      "summary": "publicは維持し、必要なら新API追加＋既存は非推奨化・段階移行で互換性を守る。",
+      "code_example": "OldPublic<public>():int = ...\nNewPublic<public>():int = ...",
+      "reference_url": "https://verselang.github.io/book/12_access/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [],
+    "manifest_section": "12"
+  },
+  {
+    "id": "verse-109",
+    "title": "protectedは継承階層の中間アクセス：public/privateを雑に使わない",
+    "category": "pattern_recommended",
+    "tags": [
+      "protected",
+      "inheritance",
+      "access control"
+    ],
+    "trigger": {
+      "description": "継承でだけ触りたいものをpublicにしすぎる／privateにしすぎるとき",
+      "keywords": [
+        "protected",
+        "inheritance",
+        "access"
+      ],
+      "code_patterns": [
+        "<protected>",
+        "<public> too broad"
+      ]
+    },
+    "problem": {
+      "summary": "protectedは“継承を前提にした共有”。public/privateの二択で設計すると、カプセル化と可用性のバランスが崩れる。",
+      "common_ai_mistake": "GPT系がJavaのprotectedと同等に誤解し、想定外の可視性を持つコードを生成する"
+    },
+    "solution": {
+      "summary": "継承階層内だけ許したいメンバーはprotectedを使い、意図しない外部公開を避ける。",
+      "code_example": "OnPositionChanged<protected>():void = {}",
+      "reference_url": "https://verselang.github.io/book/12_access/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "info",
+    "related_ids": [],
+    "manifest_section": "12"
+  },
+  {
+    "id": "verse-110",
+    "title": "live variablesは未リリースだが設計意図は把握しておく",
+    "category": "workflow_tip",
+    "tags": [
+      "live variables",
+      "reactive",
+      "planned"
+    ],
+    "trigger": {
+      "description": "live variables章の内容を“今の実装のための手順”として誤用するとき",
+      "keywords": [
+        "live variables",
+        "not released",
+        "reactive programming"
+      ],
+      "code_patterns": [
+        "set live X = ..."
+      ]
+    },
+    "problem": {
+      "summary": "live variablesは未リリース。章の内容は“予定/概念理解”として扱い、実装として期待しすぎると事故る。",
+      "common_ai_mistake": "GPT系が完成機能として誤解し、live variablesを前提に設計を生成する"
+    },
+    "solution": {
+      "summary": "未リリースである前提で、将来の反応的設計の理解（依存追跡）に使う。",
+      "code_example": "set live X = Y + 1  # 概念イメージ",
+      "reference_url": "https://verselang.github.io/book/15_live_variables/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "info",
+    "related_ids": [],
+    "manifest_section": "15"
+  },
+  {
+    "id": "verse-111",
+    "title": "liveの依存追跡：guard評価で読まれた変数が自動で追跡対象になる",
+    "category": "api_gotcha",
+    "tags": [
+      "live",
+      "dependencies",
+      "guard",
+      "set live"
+    ],
+    "trigger": {
+      "description": "live expressionのガード式で読んでいない変数が勝手に追跡対象になった/ならないと期待したとき",
+      "keywords": [
+        "guard expression",
+        "dependencies",
+        "reads during evaluation"
+      ],
+      "code_patterns": [
+        "set live X = Exp",
+        "Exp reads ..."
+      ]
+    },
+    "problem": {
+      "summary": "liveは“評価中に読んだ変数”を依存として追跡する。どこを読むか（評価経路）で更新タイミングが変わる。",
+      "common_ai_mistake": "GPT系が手動依存宣言（observer/subscribe）と混同し、読んでいない変数も依存として扱われる前提でコードを生成する"
+    },
+    "solution": {
+      "summary": "guard式の中で実際に読む変数だけが追跡対象になる前提で、guardを明確に分解する。",
+      "code_example": "set live X = (Y + 1)  # Yを読んでいるので依存になる",
+      "reference_url": "https://verselang.github.io/book/15_live_variables/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [],
+    "manifest_section": "15"
+  },
+  {
+    "id": "verse-112",
+    "title": "moduleはフォルダ単位：同一フォルダの`.verse`は import不要で同namespace",
+    "category": "workflow_tip",
+    "tags": [
+      "modules",
+      "paths",
+      "namespace",
+      "folder structure"
+    ],
+    "trigger": {
+      "description": "importを多用しすぎたり、逆に別フォルダ間で参照できると誤解するとき",
+      "keywords": [
+        "module",
+        "folder",
+        "namespace",
+        "no import within folder"
+      ],
+      "code_patterns": [
+        "PlayerSystems/*.verse"
+      ]
+    },
+    "problem": {
+      "summary": "Verseではファイルの位置（フォルダ）がmoduleを決め、同一フォルダの`.verse`群は同namespaceとして扱われる。",
+      "common_ai_mistake": "GPT系がPythonのimport規則と混同し、同フォルダでもimportなしができることを前提に誤った生成をする"
+    },
+    "solution": {
+      "summary": "同一フォルダにまとめることでimportを減らし、module境界（フォルダ境界）で参照設計を整理する。",
+      "code_example": "PlayerSystems/\n  player.verse\n  inventory.verse\n# 同module内なので互いに参照しやすい",
+      "reference_url": "https://verselang.github.io/book/16_modules/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "info",
+    "related_ids": [],
+    "manifest_section": "16"
+  },
+  {
+    "id": "verse-113",
+    "title": "モジュールは永続互換前提：公開コードの“永久アドレス”を意識する",
+    "category": "workflow_tip",
+    "tags": [
+      "modules",
+      "permanent address",
+      "compatibility",
+      "metaverse"
+    ],
+    "trigger": {
+      "description": "公開モジュール/コードを更新する際に、別作者や利用者への互換性影響を軽視するとき",
+      "keywords": [
+        "published once",
+        "unique address",
+        "backward compatibility"
+      ],
+      "code_patterns": [
+        "module address",
+        "global namespace"
+      ]
+    },
+    "problem": {
+      "summary": "module systemは永続互換を前提とした設計。アドレスが一意で、更新は後方互換を守る前提で行う必要がある。",
+      "common_ai_mistake": "GPT系がライブラリのローカル差し替え感覚で更新する前提のコードを生成する"
+    },
+    "solution": {
+      "summary": "モジュールの永続アドレスと互換性ルールを前提に、public/API設計を慎重に行う。",
+      "code_example": "# 開発の前提：公開コードは“永久の参照先”になるため、非互換変更を避ける",
+      "reference_url": "https://verselang.github.io/book/16_modules/"
+    },
+    "verification": {
+      "status": "verified",
+      "verified_by": "taichi",
+      "verified_date": "2026-04-02",
+      "uefn_version": ""
+    },
+    "severity": "warning",
+    "related_ids": [],
+    "manifest_section": "16"
+  }
+]
