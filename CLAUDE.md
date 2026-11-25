@@ -93,3 +93,9 @@ critical / warning / info
 - `data/verified/` のレコード総数を報告
 - `marketing/posts/` の投稿素材数を報告
 - 直近追加分のcategory / severity 分布を報告
+
+## Fable AI Game Studio（別プロジェクト）
+
+`studio/` 以下と `.claude/agents/`・`.claude/skills/` は、Verse Memory とは別のゲーム制作スタジオ組織。
+スタジオ業務では `studio/CLAUDE.md` に従う（Claudeはスタジオ統括として動く）。
+上記の Verse Memory データ管理ルールは `data/` `schema/` `marketing/` に対して引き続き有効。
