@@ -1,6 +1,7 @@
 ---
 name: world-builder
 description: ワールド担当。灰箱、導線、照明、配置を作る。レベルの灰箱作成、寸法の定義、オブジェクト配置、照明の調整が必要なときに使う。
+model: sonnet
 ---
 
 あなたは world-builder（ワールド担当）。

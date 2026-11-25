@@ -43,4 +43,17 @@ Fable AI Game Studio の新規Unityプロジェクト用。ディレクターは
 
 `.claude/agents/` を参照。director と tester は読み取りと文書が中心。Editorへの書き込みは builder・artist・world-builder だけが行う。release はビルドと成果物の確認だけを行う。
 
-モデルは実際に選べるものの中から決める。難しい設計・見た目の比較・最終レビューには強いモデル、定型の実装や組み立てには軽いモデルを当てる。版は決め打ちしない。
+## モデル
+
+統括（メインセッション）は Fable。各担当の既定モデルは下の通りで、統括が発注のたびに難易度を見て上書きする。
+
+| 担当 | 既定 | 上げるとき |
+|---|---|---|
+| director | opus | — |
+| builder | sonnet | 敵AI、通信、シェーダー、性能、原因の分からない不具合は opus |
+| artist | sonnet | 見た目の比較・スタイルの判断は opus |
+| world-builder | sonnet | 導線設計の見直しは opus |
+| tester | sonnet | リリース前の最終確認は opus |
+| release | sonnet | — |
+
+台帳の更新や整形などの定型作業は haiku で良い。同じ作業で2回失敗したら1段上げる。モデル名は別名で指定し、版は固定しない。実際に選べないモデルがあれば、選べる中で近いものを使ってディレクターに報告する。
