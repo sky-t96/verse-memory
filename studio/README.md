@@ -59,10 +59,20 @@
 
 コマンドを使わず普通に話しかけても良い（「この案のマネタイズを詰めて」など）。スタジオヘッドが適切な部署に発注する。
 
+## 制作現場（Unity）
+
+1本目は新規Unityプロジェクト（Windows、URP）で作る。制作現場用の6担当・計画・ツール台帳は [`unity-kit/`](unity-kit/) にまとめてあり、Windows上の新規Unityプロジェクトのルートにコピーして使う。
+
+| 層 | 場所 | 役割 |
+|---|---|---|
+| スタジオ本体 | このリポジトリの `studio/` と `.claude/` | 何を作るか・続けるかを決める（企画、事業、ゲート審査） |
+| 制作現場 | 新規Unityプロジェクトのルート（`unity-kit/` の中身） | どう作るか（director / builder / artist / world-builder / tester / release） |
+
 ## ドキュメント
 
 - [`pipeline.md`](pipeline.md) — 制作フェーズとゲート基準
 - [`tooling.md`](tooling.md) — MCP・スキルなどツールの導入状況
+- [`unity-kit/`](unity-kit/) — Unity制作キット（25件のツール台帳を含む）
 - [`decision_log.md`](decision_log.md) — ディレクター決裁の記録
 - [`templates/`](templates/) — コンセプトピッチ、ゲート審査の様式
 - `projects/<project>/` — プロジェクトごとの成果物置き場

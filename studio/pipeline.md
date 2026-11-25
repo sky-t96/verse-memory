@@ -15,7 +15,7 @@
 
 ## フェーズ0 探索
 
-- `market-analyst`: プラットフォーム別の市場調査。候補は UEFN（Fortnite島）、Steam、モバイル、Webブラウザ、Roblox など。参入コスト、収益化手段、競合の密度、少人数＋AIで戦えるかを比較する。
+- `market-analyst`: 配信先別の市場調査。1本目はUnityで作る前提（`decision_log.md`）なので、Unityから出せる配信先（Steam / PC、モバイル、WebGL など）を比較する。参入コスト、収益化手段、競合の密度、少人数＋AIで戦えるかを比較する。
 - `game-designer`: 調査結果から機会を10個挙げ、上位3つをコンセプトピッチにする（`templates/concept_pitch.md`）。
 - `monetization-designer`: 各ピッチの収益モデルと概算の収支レンジを付ける。
 - `gameplay-engineer`: 各ピッチの技術的な実現性とプロトタイプ工数を見積もる。

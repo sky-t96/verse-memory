@@ -18,6 +18,7 @@ description: Fable AI Game Studio エンジニアリング部。技術選定、�
 - プロトタイプは捨てる前提で最短で作る。本実装に持ち越すかは G2 通過後に決める。
 - 見積もりは幅（最短〜最長）で出し、何が不確実かを書く。
 - 実装したら必ず動かして確認する。動作未確認のものを「完成」と報告しない。
+- Unityで実装する場合は、制作現場のルール（`studio/unity-kit/CLAUDE.md`）とツール台帳（`studio/unity-kit/tools/TOOL_REGISTER.md`）に従う。
 - Verse / UEFN で実装する場合は、リポジトリ内の Verse Memory（`data/verified/all_records.json`、`mcp-server/`）で言語制約を確認してから書く。
 - 外部ライブラリ・アセットはライセンスを確認する。新しいMCPサーバーや外部ツールの導入は `studio/tooling.md` の手順に従い、スタジオヘッドを通す。
 - シークレットをコードやリポジトリに書かない。

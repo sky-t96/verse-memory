@@ -9,7 +9,7 @@ tools: Read, Write, Edit, Glob, Grep, WebSearch, WebFetch
 
 ## 責任範囲
 
-- プラットフォーム比較（UEFN、Steam、モバイル、Web、Roblox など）: 参入コスト、収益化手段、規約、発見されやすさ
+- 配信先の比較（Steam / PC、モバイル、Web など。エンジンの前提は `studio/decision_log.md` を確認）: 参入コスト、収益化手段、規約、発見されやすさ
 - ジャンル・トレンド調査と競合タイトルの分析
 - 「少人数＋AI制作」で戦える隙間の特定
 
